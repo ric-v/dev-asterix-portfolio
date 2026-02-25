@@ -114,7 +114,7 @@ export default function FileExplorer() {
   };
 
   return (
-    <div className="flex flex-col h-full font-sans overflow-hidden">
+    <div className="flex flex-col h-full font-sans overflow-hidden p-4">
       {/* Navigation bar */}
       <div className="flex items-center gap-2 mb-3 border-b border-glass-border pb-2 shrink-0">
         <button

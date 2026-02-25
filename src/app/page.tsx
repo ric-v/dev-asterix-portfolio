@@ -21,6 +21,9 @@ export default async function Home() {
       <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] bg-emerald-burnt/10 blur-[150px] rounded-full pointer-events-none z-0" />
       <div className="fixed bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-cyan-glowing/10 blur-[150px] rounded-full pointer-events-none z-0" />
 
+      {/* Grain texture overlay */}
+      <div className="grain" />
+
       {/* Boot sequence + Desktop wrapped together */}
       <BootWrapper>
         {/* Desktop Environment - padded to avoid taskbar overlap */}

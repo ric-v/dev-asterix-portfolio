@@ -5,7 +5,7 @@ import { Star, GitFork, Eye, Clock, Github, Activity, Terminal, ExternalLink } f
 import { formatDistanceToNow } from "date-fns";
 import LanguageBreakdown from "@/components/ui/LanguageBreakdown";
 import MarkdownRenderer from "@/components/ui/MarkdownRenderer";
-import { useOSStore } from "@/store/useOSStore";
+import { useKernel } from "@/lib/kernel";
 
 interface ProjectViewerProps {
   repoName: string;
@@ -19,7 +19,7 @@ interface RepoData {
 }
 
 export default function ProjectViewer({ repoName }: ProjectViewerProps) {
-  const { openWindow } = useOSStore();
+  const kernel = useKernel();
   const [data, setData] = useState<RepoData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -66,7 +66,7 @@ export default function ProjectViewer({ repoName }: ProjectViewerProps) {
   const { repo, readme, commits, languages } = data;
 
   return (
-    <div className="flex flex-col h-full overflow-auto font-sans">
+    <div className="flex flex-col h-full overflow-auto font-sans p-5">
       {/* Header */}
       <div className="flex flex-col gap-3 pb-4 border-b border-glass-border mb-4">
         <div className="flex items-start justify-between gap-4">
@@ -82,7 +82,7 @@ export default function ProjectViewer({ repoName }: ProjectViewerProps) {
           <div className="flex gap-2 shrink-0">
             {repo.homepage && (
               <button
-                onClick={() => openWindow("preview", `Preview — ${repo.name}`, 100, 80, { url: repo.homepage, title: repo.name })}
+                onClick={() => kernel.openBrowser(repo.homepage)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-glowing/10 text-cyan-glowing border border-cyan-glowing/30 hover:bg-cyan-glowing/20 transition text-xs font-medium"
               >
                 <ExternalLink size={12} /> Live Demo

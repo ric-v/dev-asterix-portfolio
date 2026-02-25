@@ -111,9 +111,9 @@ export default function NotepadApp() {
   };
 
   return (
-    <div className="flex h-full overflow-hidden font-sans">
+    <div className="flex h-full overflow-hidden font-sans p-4 gap-4">
       {/* Sidebar: note list */}
-      <div className="w-44 shrink-0 border-r border-glass-border flex flex-col bg-foreground/5">
+      <div className="w-44 shrink-0 rounded-lg border border-glass-border flex flex-col bg-foreground/5 overflow-hidden">
         <div className="flex items-center justify-between px-3 py-2 border-b border-glass-border shrink-0">
           <span className="text-xs font-bold text-foreground/50 uppercase tracking-widest">Notes</span>
           <button
@@ -153,7 +153,7 @@ export default function NotepadApp() {
       </div>
 
       {/* Editor pane */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden rounded-lg border border-glass-border bg-foreground/3">
         {/* Toolbar */}
         <div className="flex items-center gap-2 px-4 py-2 border-b border-glass-border bg-foreground/5 shrink-0">
           <FileText size={14} className="text-foreground/40 shrink-0" />

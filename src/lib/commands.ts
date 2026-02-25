@@ -59,6 +59,13 @@ export function useCommandRegistry(): OSCommand[] {
       shortcut: 'r',
     },
     {
+      id: 'open-monitor',
+      label: 'Activity Monitor',
+      description: 'View running processes and resource usage',
+      action: () => os.openWindow('monitor', 'Activity Monitor'),
+      shortcut: 'm',
+    },
+    {
       id: 'close-all',
       label: 'Close All Windows',
       description: 'Close all open windows',

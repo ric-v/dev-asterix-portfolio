@@ -44,7 +44,7 @@ export default function PropertiesApp() {
   };
 
   return (
-    <div className="flex flex-col h-full font-sans text-foreground">
+    <div className="flex flex-col h-full font-sans text-foreground overflow-y-auto p-5">
       <div className="flex items-center gap-3 mb-6 pb-4 border-b border-glass-border">
         <div className="p-3 rounded-full bg-cyan-glowing/10 border border-cyan-glowing/30">
           <Monitor className="text-cyan-glowing" size={24} />

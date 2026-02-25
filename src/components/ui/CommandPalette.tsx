@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { Command } from "cmdk";
-import { FolderGit2, Terminal, Monitor, HardDrive, Settings, Search, LayoutList, RefreshCw, FileEdit } from "lucide-react";
+import { FolderGit2, Terminal, Monitor, HardDrive, Settings, Search, LayoutList, RefreshCw, FileEdit, Activity } from "lucide-react";
 import { useOSStore } from "@/store/useOSStore";
 
 export default function CommandPalette() {
   const [isOpen, setIsOpen] = useState(false);
-  const { repos, openWindow, updateSettings, setReposLoading } = useOSStore();
+  const { repos, openWindow, updateSettings, setReposLoading, pushNotification } = useOSStore();
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -76,6 +76,12 @@ export default function CommandPalette() {
               <Monitor size={16} /> System Properties
             </Command.Item>
             <Command.Item
+              onSelect={() => runCommand(() => openWindow("monitor", "Activity Monitor"))}
+              className="aria-selected:bg-foreground/10 aria-selected:text-cyan-glowing transition-colors text-foreground/90"
+            >
+              <Activity size={16} /> Activity Monitor
+            </Command.Item>
+            <Command.Item
               onSelect={() => runCommand(() => openWindow("notepad", "Notepad"))}
               className="aria-selected:bg-foreground/10 aria-selected:text-cyan-glowing transition-colors text-foreground/90"
             >
@@ -129,6 +135,7 @@ export default function CommandPalette() {
               onSelect={() => runCommand(() => {
                 updateSettings({ theme: "carbon" });
                 document.documentElement.setAttribute("data-theme", "carbon");
+                pushNotification("Theme: Carbon Dark activated", "success");
               })}
               className="aria-selected:bg-foreground/10 aria-selected:text-cyan-glowing transition-colors text-foreground/90"
             >
@@ -138,6 +145,7 @@ export default function CommandPalette() {
               onSelect={() => runCommand(() => {
                 updateSettings({ theme: "emerald" });
                 document.documentElement.setAttribute("data-theme", "emerald");
+                pushNotification("Theme: Emerald City activated", "success");
               })}
               className="aria-selected:bg-foreground/10 aria-selected:text-cyan-glowing transition-colors text-foreground/90"
             >
