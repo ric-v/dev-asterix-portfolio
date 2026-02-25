@@ -5,7 +5,7 @@ import DesktopIcon from "./DesktopIcon";
 import Window from "./Window";
 import RepoList from "./RepoList";
 import { GitHubRepo } from "@/lib/github";
-import { Link, FolderGit2, HardDrive, Folder, RefreshCw, Monitor, FileTerminal, Settings, Info, Briefcase, ChevronRight, ExternalLink } from "lucide-react";
+import { Link, FolderGit2, HardDrive, Folder, RefreshCw, Monitor, FileTerminal, Settings, Info, Briefcase, ChevronRight, ExternalLink, Globe } from "lucide-react";
 import CommandPalette from "./CommandPalette";
 import TerminalApp from "../apps/TerminalApp";
 import FileExplorer from "../apps/FileExplorer";
@@ -13,6 +13,7 @@ import SettingsApp from "../apps/SettingsApp";
 import PropertiesApp from "../apps/PropertiesApp";
 import ProjectViewer from "../apps/ProjectViewer";
 import BrowserPreviewer from "../apps/BrowserPreviewer";
+import AsterixBrowser from "../apps/AsterixBrowser";
 import DocumentViewer from "../apps/DocumentViewer";
 import NotepadApp from "../apps/NotepadApp";
 import ImageViewer from "../apps/ImageViewer";
@@ -20,6 +21,8 @@ import DesktopDragSelect from "./DesktopDragSelect";
 
 import { SystemInfo } from "@/lib/sysinfo";
 import { useOSStore } from "@/store/useOSStore";
+import ActivityMonitor from "../apps/ActivityMonitor";
+import NotificationCenter from "./NotificationCenter";
 
 interface DesktopManagerProps {
   repos: GitHubRepo[];
@@ -29,14 +32,17 @@ interface DesktopManagerProps {
 export default function DesktopManager({ repos, systemInfo }: DesktopManagerProps) {
   const {
     windows: openWindows,
-    activeWindowId,
+    focusOrder,
+    getZIndex,
     openWindow,
     closeWindow,
     focusWindow,
     minimizeWindow,
     maximizeWindow,
+    snapWindow,
     restoreWindow,
     setRepos,
+    pushNotification,
   } = useOSStore();
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
@@ -80,18 +86,25 @@ export default function DesktopManager({ repos, systemInfo }: DesktopManagerProp
         if (res.ok) {
           const freshRepos = await res.json();
           setRepos(freshRepos);
+          pushNotification(`Repositories refreshed — ${freshRepos.length} repos`, 'success');
+        } else {
+          pushNotification('Failed to refresh repositories', 'error');
         }
       } catch (e) {
         console.error("Failed to refresh repos from API", e);
+        pushNotification('Network error refreshing repositories', 'error');
       }
     };
 
     window.addEventListener('os-refresh-repos', handleRefresh);
     return () => window.removeEventListener('os-refresh-repos', handleRefresh);
-  }, [setRepos]);
+  }, [setRepos, pushNotification]);
 
   return (
     <div className="w-full h-full absolute inset-0 overflow-hidden" onClick={closeContextMenu} onContextMenu={handleContextMenu}>
+      {/* System-wide notification toasts */}
+      <NotificationCenter />
+
       {/* Desktop drag-select background layer */}
       <DesktopDragSelect />
 
@@ -112,6 +125,12 @@ export default function DesktopManager({ repos, systemInfo }: DesktopManagerProp
           onClick={() => openWindow("terminal", "projects — dev-asterix", 200, 180)}
         />
         <DesktopIcon
+          id="icon-browser"
+          label="Browser"
+          icon={<Globe size={24} />}
+          onClick={() => openWindow("browser", "Asterix Browser", 200, 180, { url: "about:newtab" })}
+        />
+        <DesktopIcon
           id="icon-links"
           label="Quick Links"
           icon={<Link size={24} />}
@@ -121,8 +140,24 @@ export default function DesktopManager({ repos, systemInfo }: DesktopManagerProp
 
       {/* Render Open Windows */}
       {openWindows.map((win) => {
-        const isActive = activeWindowId === win.id;
-        const zIndex = isActive ? 50 : 10;
+        const isActive = focusOrder[focusOrder.length - 1] === win.id;
+        const zIndex = getZIndex(win.id);
+
+        // Default sizes per window type
+        const [defW, defH] = (
+          win.type === "terminal" ? [800, 550] :
+            win.type === "computer" ? [780, 560] :
+              win.type === "settings" ? [650, 500] :
+                win.type === "properties" ? [500, 400] :
+                  win.type === "project" ? [900, 600] :
+                    win.type === "browser" ? [920, 620] :
+                win.type === "preview" ? [900, 600] :
+                      win.type === "viewer" ? [750, 600] :
+                        win.type === "notepad" ? [660, 520] :
+                          win.type === "imageviewer" ? [700, 560] :
+                            win.type === "monitor" ? [720, 500] :
+                              [400, 300]
+        );
 
         return (
           <Window
@@ -131,27 +166,17 @@ export default function DesktopManager({ repos, systemInfo }: DesktopManagerProp
             title={win.title}
             isActive={isActive}
             isMinimized={win.isMinimized}
-            isMaximized={win.isMaximized}
+            snapState={win.snapState ?? "none"}
             zIndex={zIndex}
             initialX={win.x}
             initialY={win.y}
+            initialWidth={win.width ?? defW}
+            initialHeight={win.height ?? defH}
             onClose={closeWindow}
             onFocus={focusWindow}
             onMinimize={minimizeWindow}
             onMaximize={maximizeWindow}
             onRestore={restoreWindow}
-            className={
-              win.type === "terminal" ? "w-[800px] h-[550px]" :
-                win.type === "computer" ? "w-[780px] h-[560px]" :
-                  win.type === "settings" ? "w-[650px] h-[500px]" :
-                    win.type === "properties" ? "w-[500px] h-[400px]" :
-                      win.type === "project" ? "w-[900px] h-[600px]" :
-                        win.type === "preview" ? "w-[900px] h-[600px]" :
-                          win.type === "viewer" ? "w-[750px] h-[600px]" :
-                            win.type === "notepad" ? "w-[660px] h-[520px]" :
-                              win.type === "imageviewer" ? "w-[700px] h-[560px]" :
-                                "w-[350px] min-h-[250px]"
-            }
           >
             {win.type === "terminal" && win.title === "terminal — dev-asterix" && <TerminalApp />}
             {win.type === "terminal" && win.title !== "terminal — dev-asterix" && <RepoList />}
@@ -160,6 +185,9 @@ export default function DesktopManager({ repos, systemInfo }: DesktopManagerProp
             {win.type === "properties" && <PropertiesApp />}
             {win.type === "project" && win.metadata?.repoName && (
               <ProjectViewer repoName={win.metadata.repoName} />
+            )}
+            {win.type === "browser" && (
+              <AsterixBrowser windowId={win.id} initialUrl={win.metadata?.url} />
             )}
             {win.type === "preview" && win.metadata?.url && (
               <BrowserPreviewer url={win.metadata.url} title={win.metadata.title ?? win.title} />
@@ -180,6 +208,7 @@ export default function DesktopManager({ repos, systemInfo }: DesktopManagerProp
                 alt={win.metadata?.alt ?? win.title}
               />
             )}
+            {win.type === "monitor" && <ActivityMonitor />}
             {win.type === "links" && (
               <div className="flex flex-col gap-4 font-sans px-2">
                 <a href="#" className="flex items-center justify-between p-3 rounded-lg hover:bg-foreground/5 transition-colors group border border-transparent hover:border-glass-border">

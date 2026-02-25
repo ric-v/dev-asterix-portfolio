@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useOSStore, WindowType } from "@/store/useOSStore";
-import { Terminal, HardDrive, Settings, Info, Link, FolderGit2, ExternalLink, FileText, Image } from "lucide-react";
+import { Terminal, HardDrive, Settings, Info, Link, FolderGit2, ExternalLink, FileText, Image, Activity, LayoutDashboard, Globe } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -13,24 +13,33 @@ const appIcons: Record<WindowType, React.ReactNode> = {
   properties: <Info size={18} />,
   links: <Link size={18} />,
   status: <Info size={18} />,
-  browser: <FolderGit2 size={18} />,
+  browser: <Globe size={18} />,
   project: <FolderGit2 size={18} />,
-  preview: <ExternalLink size={18} />,
+  preview: <Globe size={18} />,
   viewer: <ExternalLink size={18} />,
   notepad: <FileText size={18} />,
   imageviewer: <Image size={18} />,
+  monitor: <Activity size={18} />,
 };
+
+const BROWSER_DEFAULT_URL = "https://github.com/dev-asterix";
 
 const dockApps = [
   { type: "terminal" as WindowType, label: "Terminal", icon: <Terminal size={20} /> },
   { type: "computer" as WindowType, label: "Finder", icon: <HardDrive size={20} /> },
+  { type: "browser" as WindowType, label: "Browser", icon: <Globe size={20} /> },
   { type: "settings" as WindowType, label: "Settings", icon: <Settings size={20} /> },
   { type: "properties" as WindowType, label: "Properties", icon: <Info size={20} /> },
+  { type: "monitor" as WindowType, label: "Activity Monitor", icon: <Activity size={20} /> },
 ];
 
 export default function Taskbar() {
-  const { windows, activeWindowId, openWindow, focusWindow, minimizeWindow, restoreWindow } = useOSStore();
+  const { windows, focusOrder, openWindow, focusWindow, minimizeWindow, restoreWindow, closeAll } = useOSStore();
+  const activeWindowId = focusOrder[focusOrder.length - 1] ?? null;
   const [time, setTime] = useState("");
+
+  // Track minimized-all state (show desktop)
+  const [allMinimized, setAllMinimized] = useState(false);
 
   // Real-time clock
   useEffect(() => {
@@ -52,14 +61,52 @@ export default function Taskbar() {
         minimizeWindow(existingWindow.id);
       }
     } else {
-      const x = typeof window !== "undefined" ? window.innerWidth / 2 - 400 : 100;
-      const y = typeof window !== "undefined" ? window.innerHeight / 2 - 275 : 100;
-      openWindow(type, label === "Finder" ? "My Computer" : `${label.toLowerCase()} — dev-asterix`, x, y);
+      const x = typeof window !== "undefined" ? window.innerWidth / 2 - 450 : 100;
+      const y = typeof window !== "undefined" ? window.innerHeight / 2 - 300 : 100;
+      const titles: Partial<Record<WindowType, string>> = {
+        computer: "My Computer",
+        monitor: "Activity Monitor",
+        browser: "Asterix Browser",
+      };
+      const metadata: Partial<Record<WindowType, any>> = {
+        browser: { url: "about:newtab" },
+      };
+      openWindow(type, titles[type] ?? `${label.toLowerCase()} — dev-asterix`, x, y, metadata[type]);
+    }
+  };
+
+  const handleShowDesktop = () => {
+    if (allMinimized) {
+      // Restore all windows
+      windows.forEach(w => {
+        if (w.isMinimized) focusWindow(w.id);
+      });
+      setAllMinimized(false);
+    } else {
+      // Minimize all windows
+      windows.forEach(w => {
+        if (!w.isMinimized) minimizeWindow(w.id);
+      });
+      setAllMinimized(true);
     }
   };
 
   return (
     <div className="fixed bottom-0 left-0 right-0 h-12 z-100 flex items-center justify-between px-4 border-t border-glass-border bg-background/50 backdrop-blur-2xl">
+
+      {/* Show Desktop button (far left) */}
+      <button
+        onClick={handleShowDesktop}
+        title={allMinimized ? "Restore Windows" : "Show Desktop"}
+        className={cn(
+          "flex items-center justify-center w-8 h-8 rounded-lg border transition-all mr-2 shrink-0",
+          allMinimized
+            ? "bg-cyan-glowing/15 text-cyan-glowing border-cyan-glowing/30"
+            : "bg-foreground/5 text-foreground/40 border-glass-border hover:bg-foreground/10 hover:text-foreground/70"
+        )}
+      >
+        <LayoutDashboard size={15} />
+      </button>
 
       {/* Left: Running App Buttons (Taskbar items) */}
       <div className="flex items-center gap-1 flex-1 overflow-x-auto scrollbar-none h-full">

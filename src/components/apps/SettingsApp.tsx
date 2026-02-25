@@ -4,7 +4,7 @@ import { useOSStore } from "@/store/useOSStore";
 import { Settings, Palette, Eye, LayoutList, Check } from "lucide-react";
 
 export default function SettingsApp() {
-  const { settings, updateSettings } = useOSStore();
+  const { settings, updateSettings, pushNotification } = useOSStore();
 
   const themes = [
     { id: "carbon", name: "Carbon Dark", color: "bg-zinc-900" },
@@ -15,7 +15,7 @@ export default function SettingsApp() {
   ];
 
   return (
-    <div className="flex flex-col h-full font-sans text-foreground">
+    <div className="flex flex-col h-full font-sans text-foreground overflow-y-auto p-5">
       <div className="flex items-center gap-3 mb-6 pb-4 border-b border-glass-border">
         <div className="p-3 rounded-full bg-emerald-burnt/10 border border-emerald-burnt/30">
           <Settings className="text-emerald-burnt" size={24} />
@@ -39,11 +39,10 @@ export default function SettingsApp() {
                 key={theme.id}
                 onClick={() => {
                   updateSettings({ theme: theme.id });
-                  // In a real app, you'd apply the theme class to HTML/body here,
-                  // or have a reactive wrapper component that listens to `settings.theme`.
                   if (typeof document !== "undefined") {
                     document.documentElement.setAttribute("data-theme", theme.id);
                   }
+                  pushNotification(`Theme “${theme.name}” activated`, "success");
                 }}
                 className={`flex items-center justify-between p-3 rounded-lg border transition-all ${settings.theme === theme.id
                     ? "border-cyan-glowing bg-cyan-glowing/5 shadow-[0_0_15px_rgba(0,173,216,0.15)]"
