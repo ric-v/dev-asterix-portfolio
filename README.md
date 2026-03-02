@@ -20,7 +20,7 @@ A fully immersive, desktop OS–themed developer portfolio built with **Next.js 
 - Minimize, Maximize, and Close controls.
 - Windows restore from taskbar on click.
 
-### 📦 Built-in Apps
+### 📦 Built-in Apps 
 
 | App | Description |
 |-----|-------------|
