@@ -1,14 +1,38 @@
 "use client";
 
+import { useState } from "react";
 import BootSequence from "./BootSequence";
+import LoginScreen from "./LoginScreen";
+import { AnimatePresence } from "framer-motion";
+import { SystemInfo } from "@/lib/sysinfo";
 
 interface BootWrapperProps {
   children: React.ReactNode;
+  systemInfo: SystemInfo;
 }
 
-export default function BootWrapper({ children }: BootWrapperProps) {
+const REMEMBER_KEY = "asterix-remember-me";
+
+export default function BootWrapper({ children, systemInfo }: BootWrapperProps) {
+  const [bootComplete, setBootComplete] = useState(false);
+  const [isLoggedOut, setIsLoggedOut] = useState(true);
+
   const handleBootComplete = () => {
-    // Dispatch post-boot event for terminal auto-run, etc.
+    setBootComplete(true);
+    // Only skip login if user has *explicitly* saved remember-me before (saved === "1").
+    // null = first visit → show login screen.
+    const saved = typeof window !== "undefined" ? localStorage.getItem(REMEMBER_KEY) : null;
+    if (saved === "1") {
+      setIsLoggedOut(false);
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent("os-post-boot"));
+      }, 400);
+    }
+  };
+
+  const handleLogin = () => {
+    setIsLoggedOut(false);
+    sessionStorage.setItem("asterix-logged-in", "1");
     setTimeout(() => {
       window.dispatchEvent(new CustomEvent("os-post-boot"));
     }, 800);
@@ -16,13 +40,14 @@ export default function BootWrapper({ children }: BootWrapperProps) {
 
   return (
     <>
-      {/*
-        BootSequence renders fixed at z-9999, fully covering the screen.
-        Children always render underneath — revealed naturally as the
-        boot screen fades out via AnimatePresence.
-        No conditional gate = no blank screen on reload.
-      */}
-      <BootSequence onComplete={handleBootComplete} />
+      <BootSequence onComplete={handleBootComplete} systemInfo={systemInfo} />
+
+      <AnimatePresence mode="wait">
+        {bootComplete && isLoggedOut && (
+          <LoginScreen onLogin={handleLogin} />
+        )}
+      </AnimatePresence>
+
       {children}
     </>
   );

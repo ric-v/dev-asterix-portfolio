@@ -65,7 +65,7 @@ export default function CustomCursor() {
 
       {/* Exact position dot */}
       <motion.div
-        className="fixed top-0 left-0 w-2 h-2 bg-cyan-glowing rounded-full pointer-events-none z-50 shadow-[0_0_8px_rgba(0,229,255,0.8)]"
+        className="fixed top-0 left-0 w-2 h-2 bg-cyan-glowing rounded-full pointer-events-none z-99999 shadow-[0_0_8px_rgba(0,229,255,0.8)]"
         style={{
           x: mouseX,
           y: mouseY,
@@ -81,7 +81,7 @@ export default function CustomCursor() {
 
       {/* Trailing smooth ring */}
       <motion.div
-        className="fixed top-0 left-0 w-8 h-8 border border-emerald-burnt rounded-full pointer-events-none z-40"
+        className="fixed top-0 left-0 w-8 h-8 border border-emerald-burnt rounded-full pointer-events-none z-99998"
         style={{
           x: smoothX,
           y: smoothY,

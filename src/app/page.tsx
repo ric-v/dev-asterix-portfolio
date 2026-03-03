@@ -25,7 +25,7 @@ export default async function Home() {
       <div className="grain" />
 
       {/* Boot sequence + Desktop wrapped together */}
-      <BootWrapper>
+      <BootWrapper systemInfo={systemInfo}>
         {/* Desktop Environment - padded to avoid taskbar overlap */}
         <main className="flex-1 w-full h-full relative z-10 pt-10 pb-12">
           <DesktopManager repos={repos} systemInfo={systemInfo} />

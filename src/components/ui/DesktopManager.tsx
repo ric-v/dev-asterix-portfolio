@@ -17,6 +17,7 @@ import AsterixBrowser from "../apps/AsterixBrowser";
 import DocumentViewer from "../apps/DocumentViewer";
 import NotepadApp from "../apps/NotepadApp";
 import ImageViewer from "../apps/ImageViewer";
+import WelcomeApp from "../apps/WelcomeApp";
 import DesktopDragSelect from "./DesktopDragSelect";
 
 import { SystemInfo } from "@/lib/sysinfo";
@@ -44,6 +45,7 @@ export default function DesktopManager({ repos, systemInfo }: DesktopManagerProp
     restoreWindow,
     setRepos,
     pushNotification,
+    setSystemInfo,
   } = useOSStore();
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
@@ -52,6 +54,10 @@ export default function DesktopManager({ repos, systemInfo }: DesktopManagerProp
   useEffect(() => {
     setRepos(repos);
   }, [repos, setRepos]);
+
+  useEffect(() => {
+    setSystemInfo(systemInfo);
+  }, [systemInfo, setSystemInfo]);
 
   // Initialize kernel on client mount — run once only
   // (kernel object is unstable across renders; init() has its own guard)
@@ -66,16 +72,11 @@ export default function DesktopManager({ repos, systemInfo }: DesktopManagerProp
       const screenW = window.innerWidth;
       const screenH = window.innerHeight;
 
-      // Calculate layout cluster size (800 terminal + 40 gap + 500 properties = 1340)
-      const totalW = 1340;
-      const totalH = 550;
+      // Centered welcome window (width 550, height 560 roughly)
+      const startX = Math.max(20, (screenW - 550) / 2);
+      const startY = Math.max(20, (screenH - 560) / 2);
 
-      // Calculate top-left anchored start so the whole block is centered
-      const startX = Math.max(40, (screenW - totalW) / 2);
-      const startY = Math.max(40, (screenH - totalH) / 2);
-
-      openWindow("terminal", "terminal — dev-asterix", startX, startY);
-      openWindow("properties", "Properties", startX + 840, startY);
+      openWindow("welcome", "Welcome to Asterix OS", startX, startY);
     }
   }, [openWindow]);
 
@@ -120,7 +121,7 @@ export default function DesktopManager({ repos, systemInfo }: DesktopManagerProp
       <CommandPalette />
 
       {/* Desktop Icons */}
-      <div className="absolute top-24 left-6 flex flex-col gap-6 items-start z-0">
+      <div className="absolute top-24 bottom-24 left-6 flex flex-col flex-wrap gap-6 items-start content-start z-0">
         <DesktopIcon
           id="icon-computer"
           label="My Computer"
@@ -166,12 +167,13 @@ export default function DesktopManager({ repos, systemInfo }: DesktopManagerProp
                 win.type === "properties" ? [500, 400] :
                   win.type === "project" ? [900, 600] :
                     win.type === "browser" ? [920, 620] :
-                win.type === "preview" ? [900, 600] :
-                      win.type === "viewer" ? [750, 600] :
-                        win.type === "notepad" ? [660, 520] :
-                          win.type === "imageviewer" ? [700, 560] :
-                            win.type === "monitor" ? [720, 500] :
-                              [400, 300]
+                      win.type === "preview" ? [900, 600] :
+                        win.type === "viewer" ? [750, 600] :
+                          win.type === "notepad" ? [660, 520] :
+                            win.type === "imageviewer" ? [700, 560] :
+                              win.type === "monitor" ? [720, 500] :
+                                win.type === "welcome" ? [700, 650] :
+                                  [400, 300]
         );
 
         return (
@@ -196,6 +198,7 @@ export default function DesktopManager({ repos, systemInfo }: DesktopManagerProp
             {win.type === "terminal" && win.title === "terminal — dev-asterix" && <TerminalApp />}
             {win.type === "terminal" && win.title !== "terminal — dev-asterix" && <RepoList />}
             {win.type === "computer" && <FileExplorer />}
+            {win.type === "welcome" && <WelcomeApp />}
             {win.type === "settings" && <SettingsApp />}
             {win.type === "properties" && <PropertiesApp />}
             {win.type === "project" && win.metadata?.repoName && (
@@ -226,7 +229,7 @@ export default function DesktopManager({ repos, systemInfo }: DesktopManagerProp
             {win.type === "monitor" && <ActivityMonitor />}
             {win.type === "links" && (
               <div className="flex flex-col gap-4 font-sans px-2">
-                <a href="#" className="flex items-center justify-between p-3 rounded-lg hover:bg-foreground/5 transition-colors group border border-transparent hover:border-glass-border">
+                <a href="https://drive.google.com/file/d/1-34NxUJF_Fj6-s4vUZVZIjIVO0VD-WX9/view?usp=drive_link" target="_blank" className="flex items-center justify-between p-3 rounded-lg hover:bg-foreground/5 transition-colors group border border-transparent hover:border-glass-border">
                   <div className="flex items-center gap-3">
                     <Briefcase size={16} className="text-foreground/70 group-hover:text-cyan-glowing" />
                     <span className="font-bold text-sm text-foreground/90 group-hover:text-cyan-glowing">Resume</span>
