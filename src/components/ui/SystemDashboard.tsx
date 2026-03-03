@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Activity, GitBranch, Star, Zap, Code2, TrendingUp } from 'lucide-react';
+import ContributionGraph from './ContributionGraph';
 
 interface PortfolioMetricsData {
   totalRepos: number;
@@ -76,7 +77,7 @@ export default function SystemDashboard() {
   );
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 p-6 h-full overflow-y-auto custom-scrollbar">
       <div className="flex items-center gap-2 text-xl font-bold">
         <Code2 className="text-cyan-glowing" size={24} />
         <span>Engineering Dashboard</span>
@@ -175,6 +176,15 @@ export default function SystemDashboard() {
           )}
         </div>
       )}
+
+      {/* Contribution Activity */}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-2 font-semibold text-foreground/80">
+          <Activity size={18} className="text-emerald-burnt" />
+          <span>Contribution Activity</span>
+        </div>
+        <ContributionGraph />
+      </div>
 
       {/* Last Updated */}
       <div className="text-xs text-foreground/40 text-right">

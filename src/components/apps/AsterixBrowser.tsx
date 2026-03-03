@@ -21,12 +21,13 @@ import { useEffect, useState, useRef, useCallback, KeyboardEvent } from "react";
 import {
   ArrowLeft, ArrowRight, RefreshCw, Plus, X, ExternalLink,
   Home, Globe, Clock, Settings, HardDrive, Activity,
-  FolderGit2, Terminal, Search, Slash, AlertTriangle, ShieldAlert
+  FolderGit2, Terminal, Search, Slash, AlertTriangle, ShieldAlert,
+  LayoutDashboard, CalendarDays, FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useBrowserStore } from "@/store/useBrowserStore";
 import { useOSStore } from "@/store/useOSStore";
-import { resolveUrl, ResolvedRoute, DEMO_REGISTRY } from "@/lib/browserEngine";
+import { resolveUrl, ResolvedRoute } from "@/lib/browserEngine";
 
 // Internal app renderers
 import SettingsApp from "./SettingsApp";
@@ -35,6 +36,9 @@ import ActivityMonitor from "./ActivityMonitor";
 import FileExplorer from "./FileExplorer";
 import RepoList from "@/components/ui/RepoList";
 import ProjectViewer from "./ProjectViewer";
+import Timeline from "@/components/ui/TimelineView";
+import SystemDashboard from "@/components/ui/SystemDashboard";
+import ContributionGraph from "@/components/ui/ContributionGraph";
 import { formatDistanceToNow } from "date-fns";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -44,9 +48,7 @@ import { formatDistanceToNow } from "date-fns";
 /** New Tab / Home page shown for about:newtab */
 function NewTabPage({ onNavigate, onOpenNewTab }: { onNavigate: (url: string) => void; onOpenNewTab: (url: string) => void }) {
   const repos = useOSStore(s => s.repos);
-  const [search, setSearch] = useState("");
   const [time, setTime] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const tick = () => {
@@ -61,11 +63,6 @@ function NewTabPage({ onNavigate, onOpenNewTab }: { onNavigate: (url: string) =>
     return () => clearInterval(id);
   }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (search.trim()) onNavigate(search.trim());
-  };
-
   const recentRepos = repos.slice(0, 6);
 
   return (
@@ -79,29 +76,41 @@ function NewTabPage({ onNavigate, onOpenNewTab }: { onNavigate: (url: string) =>
         <p className="text-xs text-foreground/30 font-mono">controlled runtime · not Chrome</p>
       </div>
 
-      {/* Smart search bar */}
-      <form onSubmit={handleSearch} className="w-full max-w-xl">
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-glass-border bg-foreground/5 hover:bg-foreground/8 focus-within:border-cyan-glowing/40 focus-within:bg-foreground/8 transition-all">
-          <Search size={15} className="text-foreground/40 shrink-0" />
-          <input
-            ref={inputRef}
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Navigate to /projects/repo, a repo name, or a URL…"
-            className="flex-1 bg-transparent text-sm text-foreground/80 placeholder:text-foreground/30 outline-none font-mono"
-            autoFocus
-          />
-          {search && (
-            <button type="submit" className="shrink-0 text-xs text-cyan-glowing font-medium hover:underline">
-              Go
+
+
+      {/* Quick links — internal OS routes */}
+      <div className="w-full max-w-5xl mx-auto">
+        <h2 className="text-xs font-bold text-foreground/40 uppercase tracking-widest mb-3">
+          Quick Links
+        </h2>
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+          {[
+            { label: "Projects",   path: "/projects",   icon: FolderGit2 },
+            { label: "Timeline",   path: "/timeline",   icon: CalendarDays },
+            { label: "Dashboard",  path: "/dashboard",  icon: LayoutDashboard },
+            { label: "Monitor",    path: "/monitor",    icon: Activity },
+            { label: "Resume",     path: "/resume",     icon: FileText },
+            { label: "Settings",   path: "/settings",   icon: Settings },
+          ].map(({ label, path, icon: Icon }) => (
+            <button
+              key={path}
+              onClick={() => onNavigate(path)}
+              className="flex flex-col items-center gap-1 px-1.5 py-2 rounded-lg border border-glass-border bg-foreground/3 hover:bg-cyan-glowing/8 hover:border-cyan-glowing/30 transition-all group text-[9px]"
+            >
+              <div className="p-1.5 rounded-lg bg-foreground/5 group-hover:bg-cyan-glowing/10 transition-colors">
+                <Icon size={14} className="text-foreground/50 group-hover:text-cyan-glowing transition-colors" />
+              </div>
+              <span className="leading-none">
+                {label}
+              </span>
             </button>
-          )}
+          ))}
         </div>
-      </form>
+      </div>
 
       {/* Recent repos */}
       {recentRepos.length > 0 && (
-        <div className="w-full max-w-2xl">
+        <div className="w-full max-w-5xl mx-auto">
           <h2 className="text-xs font-bold text-foreground/40 uppercase tracking-widest mb-3">
             Repositories
           </h2>
@@ -121,41 +130,38 @@ function NewTabPage({ onNavigate, onOpenNewTab }: { onNavigate: (url: string) =>
                 {repo.description && (
                   <p className="text-[10px] text-foreground/40 leading-tight line-clamp-2">{repo.description}</p>
                 )}
-                <p className="text-[10px] text-foreground/25 mt-1 font-mono">
-                  {formatDistanceToNow(new Date(repo.updated_at))} ago
-                </p>
+                <div className="flex items-center gap-3 mt-1.5">
+                  <span className="flex items-center gap-1 text-[10px] text-foreground/40 font-mono">
+                    <Clock size={9} />
+                    {formatDistanceToNow(new Date(repo.updated_at))} ago
+                  </span>
+                  {repo.stargazers_count > 0 && (
+                    <span className="flex items-center gap-1 text-[10px] text-amber-400/70 font-mono">
+                      ★ {repo.stargazers_count}
+                    </span>
+                  )}
+                  {repo.forks_count > 0 && (
+                    <span className="flex items-center gap-1 text-[10px] text-foreground/35 font-mono">
+                      ⑂ {repo.forks_count}
+                    </span>
+                  )}
+                </div>
               </button>
             ))}
           </div>
         </div>
       )}
 
-      {/* Demo registry */}
-      {Object.keys(DEMO_REGISTRY).length > 0 && (
-        <div className="w-full max-w-2xl">
-          <h2 className="text-xs font-bold text-foreground/40 uppercase tracking-widest mb-3">
-            Trusted Apps
-          </h2>
-          <div className="flex gap-2 flex-wrap">
-            {Object.entries(DEMO_REGISTRY).map(([key, url]) => (
-              <button
-                key={key}
-                onClick={() => onOpenNewTab(url)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-glass-border bg-foreground/3 hover:bg-emerald-burnt/10 hover:border-emerald-burnt/30 text-xs font-mono text-foreground/60 hover:text-emerald-burnt transition-all"
-              >
-                <Globe size={12} />
-                {key}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Contribution graph */}
+      <ContributionGraph />
     </div>
   );
 }
 
 /** Renders an internal OS app by path key */
 function InternalRenderer({ path }: { path: string }) {
+  const repos = useOSStore(s => s.repos);
+
   switch (path) {
     case "home":
     case "repos":
@@ -166,6 +172,40 @@ function InternalRenderer({ path }: { path: string }) {
       return <ActivityMonitor />;
     case "computer":
       return <FileExplorer />;
+    case "timeline":
+      return <Timeline repos={repos} />;
+    case "dashboard":
+      return <SystemDashboard />;
+    case "resume":
+      return (
+        <div className="flex flex-col items-center justify-center h-full gap-6 font-mono px-6 text-center">
+          <div className="p-4 rounded-full bg-cyan-glowing/10 border border-cyan-glowing/20">
+            <ExternalLink size={28} className="text-cyan-glowing" />
+          </div>
+          <div className="flex flex-col gap-2">
+            <p className="text-base font-bold text-foreground/80">Resume / CV</p>
+            <p className="text-xs text-foreground/40 max-w-xs leading-relaxed">
+              Download or view the resume on GitHub. Projects and skills are best explored right here in Asterix OS.
+            </p>
+          </div>
+          <div className="flex gap-3 flex-wrap justify-center">
+            <a
+              href="https://github.com/ric-v"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-cyan-glowing/30 bg-cyan-glowing/8 text-cyan-glowing text-xs hover:bg-cyan-glowing/15 transition-colors"
+            >
+              <ExternalLink size={12} /> View GitHub Profile
+            </a>
+            <a
+              href="mailto:support@astrx.dev"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-glass-border bg-foreground/5 text-foreground/60 text-xs hover:bg-foreground/10 transition-colors"
+            >
+              support@astrx.dev
+            </a>
+          </div>
+        </div>
+      );
     default:
       return (
         <div className="flex flex-col items-center justify-center h-full gap-2 font-mono text-sm text-foreground/50">
@@ -209,22 +249,16 @@ function DemoFrame({ url }: { url: string }) {
 
 /** Shown when user navigated to an external URL */
 function ExternalPage({ url }: { url: string }) {
-  useEffect(() => {
-    // Open the real browser tab immediately on mount
-    const timer = setTimeout(() => window.open(url, "_blank", "noreferrer"), 100);
-    return () => clearTimeout(timer);
-  }, [url]);
-
   return (
     <div className="flex flex-col items-center justify-center h-full gap-6 font-mono px-6 text-center">
       <div className="p-4 rounded-full bg-amber-400/10 border border-amber-400/20">
         <ShieldAlert size={28} className="text-amber-400" />
       </div>
       <div className="flex flex-col gap-2">
-        <p className="text-base font-bold text-foreground/80">Opening in your browser</p>
+        <p className="text-base font-bold text-foreground/80">External Site</p>
         <p className="text-xs text-foreground/40 max-w-xs leading-relaxed">
-          External sites live outside Asterix Browser's controlled runtime.
-          The page has been opened in a real browser tab.
+          This URL lives outside Asterix Browser's controlled runtime and cannot be embedded.
+          Click the button below to open it in your real browser.
         </p>
         <p className="text-xs font-mono text-cyan-glowing/80 mt-2 truncate max-w-xs">{url}</p>
       </div>
@@ -234,7 +268,7 @@ function ExternalPage({ url }: { url: string }) {
         rel="noreferrer"
         className="flex items-center gap-2 px-4 py-2 rounded-lg border border-cyan-glowing/30 bg-cyan-glowing/8 text-cyan-glowing text-xs hover:bg-cyan-glowing/15 transition-colors"
       >
-        <ExternalLink size={12} /> Open Again
+        <ExternalLink size={12} /> Open in Browser
       </a>
     </div>
   );

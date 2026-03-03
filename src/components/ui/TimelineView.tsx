@@ -2,16 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { Calendar, Star, GitBranch } from 'lucide-react';
-import { EnrichedRepo } from '@/lib/githubAggregator';
+import { GitHubRepo } from '@/lib/github';
 import { formatDistanceToNow } from 'date-fns';
 
 interface TimelineProps {
-  repos: EnrichedRepo[];
+  repos: GitHubRepo[];
 }
 
 interface TimelineEvent {
   year: number;
-  repos: EnrichedRepo[];
+  repos: GitHubRepo[];
 }
 
 export default function Timeline({ repos }: TimelineProps) {
@@ -19,7 +19,7 @@ export default function Timeline({ repos }: TimelineProps) {
 
   useEffect(() => {
     // Group repos by creation year
-    const grouped = new Map<number, EnrichedRepo[]>();
+    const grouped = new Map<number, GitHubRepo[]>();
 
     repos.forEach(repo => {
       const year = new Date(repo.created_at).getFullYear();
@@ -43,7 +43,7 @@ export default function Timeline({ repos }: TimelineProps) {
   }, [repos]);
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8 p-6 h-full overflow-y-auto custom-scrollbar">
       <div className="flex items-center gap-2 text-lg font-semibold">
         <Calendar className="text-cyan-glowing" />
         <span>Project Timeline</span>
