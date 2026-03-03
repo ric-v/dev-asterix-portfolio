@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { cn, useIsMobile } from "@/lib/utils";
 import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useTheme } from "next-themes";
 import { useOSStore, SnapState } from "@/store/useOSStore";
@@ -78,9 +78,9 @@ export default function Window({
     startW: number; startH: number; startWinX: number; startWinY: number;
   } | null>(null);
 
-  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+  const isMobile = useIsMobile();
   const isSnapped = snapState !== "none";
-  const isMaximized = snapState === "maximized" || isMobile;
+  const isMaximized = snapState === "maximized";
 
   // Compute snapped layout
   const vpW = typeof window !== "undefined" ? window.innerWidth : 1280;
@@ -96,7 +96,7 @@ export default function Window({
 
   // ─── Custom drag (title bar) ──────────────────────────────────────────────
   const handleTitlePointerDown = useCallback((e: React.PointerEvent) => {
-    if (isSnapped) return; // let double-click restore; don't drag when snapped
+    if (isMobile || isSnapped) return; // no drag on mobile or when snapped
     if ((e.target as HTMLElement).closest("button")) return;
     e.preventDefault();
     onFocus?.(id);
@@ -247,47 +247,66 @@ export default function Window({
         )}
       >
         {/* ── Title Bar ── */}
-        <div
-          className={cn(
-            "h-10 flex flex-none items-center justify-between px-4 border-b border-glass-border bg-foreground/2 backdrop-blur-md select-none",
-            !isSnapped && "cursor-grab active:cursor-grabbing",
-          )}
-          onPointerDown={handleTitlePointerDown}
-          onPointerMove={handleTitlePointerMove}
-          onPointerUp={handleTitlePointerUp}
-          onDoubleClick={() => {
-            if (isSnapped) onRestore?.(id);
-            else onMaximize?.(id);
-          }}
-        >
-          {/* Traffic lights */}
-          <div className="flex items-center gap-2 group/dots">
+        {isMobile ? (
+          /* Mobile: slim bar — app title + close button only */
+          <div className="h-10 flex flex-none items-center justify-between px-3 border-b border-glass-border bg-foreground/2 backdrop-blur-md select-none">
+            <div className="flex-1 font-mono text-xs font-semibold tracking-wider text-foreground/70 truncate">
+              {title}
+            </div>
             <button
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => { e.stopPropagation(); onClose?.(id); }}
               title="Close"
-              className="w-3 h-3 rounded-full bg-red-500/80 hover:bg-red-500 hover:shadow-[0_0_8px_rgba(239,68,68,0.7)] transition-all outline-none cursor-pointer"
-            />
-            <button
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={(e) => { e.stopPropagation(); onMinimize?.(id); }}
-              title="Minimize"
-              className="w-3 h-3 rounded-full bg-amber-400/80 hover:bg-amber-400 hover:shadow-[0_0_8px_rgba(251,191,36,0.7)] transition-all outline-none cursor-pointer"
-            />
-            <button
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={(e) => { e.stopPropagation(); isSnapped ? onRestore?.(id) : onMaximize?.(id); }}
-              title={isSnapped ? "Restore" : "Maximize"}
-              className="w-3 h-3 rounded-full bg-green-500/80 hover:bg-green-500 hover:shadow-[0_0_8px_rgba(34,197,94,0.7)] transition-all outline-none cursor-pointer"
-            />
+              className="w-11 h-11 flex items-center justify-center rounded-lg text-foreground/50 hover:text-red-400 hover:bg-red-500/10 transition-colors outline-none cursor-pointer shrink-0 text-base"
+              aria-label="Close"
+            >
+              ✕
+            </button>
           </div>
+        ) : (
+          /* Desktop: full title bar with traffic lights + drag */
+          <div
+            className={cn(
+              "h-10 flex flex-none items-center justify-between px-4 border-b border-glass-border bg-foreground/2 backdrop-blur-md select-none",
+              !isSnapped && "cursor-grab active:cursor-grabbing",
+            )}
+            onPointerDown={handleTitlePointerDown}
+            onPointerMove={handleTitlePointerMove}
+            onPointerUp={handleTitlePointerUp}
+            onDoubleClick={() => {
+              if (isSnapped) onRestore?.(id);
+              else onMaximize?.(id);
+            }}
+          >
+            {/* Traffic lights */}
+            <div className="flex items-center gap-2 group/dots">
+              <button
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); onClose?.(id); }}
+                title="Close"
+                className="w-3 h-3 rounded-full bg-red-500/80 hover:bg-red-500 hover:shadow-[0_0_8px_rgba(239,68,68,0.7)] transition-all outline-none cursor-pointer"
+              />
+              <button
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); onMinimize?.(id); }}
+                title="Minimize"
+                className="w-3 h-3 rounded-full bg-amber-400/80 hover:bg-amber-400 hover:shadow-[0_0_8px_rgba(251,191,36,0.7)] transition-all outline-none cursor-pointer"
+              />
+              <button
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); isSnapped ? onRestore?.(id) : onMaximize?.(id); }}
+                title={isSnapped ? "Restore" : "Maximize"}
+                className="w-3 h-3 rounded-full bg-green-500/80 hover:bg-green-500 hover:shadow-[0_0_8px_rgba(34,197,94,0.7)] transition-all outline-none cursor-pointer"
+              />
+            </div>
 
-          {/* Title */}
-          <div className="absolute left-1/2 -translate-x-1/2 font-mono text-xs font-semibold tracking-wider text-foreground/70 pointer-events-none truncate max-w-[60%] text-center">
-            {title}
+            {/* Title */}
+            <div className="absolute left-1/2 -translate-x-1/2 font-mono text-xs font-semibold tracking-wider text-foreground/70 pointer-events-none truncate max-w-[60%] text-center">
+              {title}
+            </div>
+            <div className="w-[52px]" />
           </div>
-          <div className="w-[52px]" />
-        </div>
+        )}
 
         {/* ── Content ── */}
         <div className="flex-1 overflow-auto bg-background/30 backdrop-blur-3xl relative cursor-default">

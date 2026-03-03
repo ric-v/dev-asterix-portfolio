@@ -150,3 +150,23 @@ body {
 /* ── Scrollbar hide ────────────────────────────────────────────────────────── */
 .scrollbar-none { scrollbar-width: none; }
 .scrollbar-none::-webkit-scrollbar { display: none; }
+
+/* ── Mobile optimisations ──────────────────────────────────────────────────── */
+@media (max-width: 639px) {
+  html, body {
+    overscroll-behavior: none;
+    /* Allow vertical panning but block pull-to-refresh interfering with the OS */
+    touch-action: pan-y;
+  }
+
+  /* Remove iOS tap flash on all interactive elements */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Prevent text-size adjustment on orientation change */
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+}

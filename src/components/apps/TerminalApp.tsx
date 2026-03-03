@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useOSStore } from "@/store/useOSStore";
 import { useKernel } from "@/lib/kernel";
 import { normalizePath, resolveVFSPath, getVFSChildren, vfsDisplayPath, VFSNode } from "@/lib/vfs";
-import { Github, Mail } from "lucide-react";
+import { Github, Linkedin, Mail } from "lucide-react";
 
 interface HistoryEntry {
   command: string;
@@ -31,6 +31,16 @@ const whoamiOutput = (
       >
         <Github size={18} />
         GitHub
+      </a>
+
+      <a
+        href="https://linkedin.com/in/ric-v"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-2 px-4 py-2 rounded hover:bg-foreground/5 transition-colors font-medium text-sm text-foreground"
+      >
+        <Linkedin size={18} />
+        LinkedIn
       </a>
       <a
         href="mailto:support@astrx.dev"

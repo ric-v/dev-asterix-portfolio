@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useOSStore, WindowType } from "@/store/useOSStore";
 import { Terminal, HardDrive, Settings, Info, Link, FolderGit2, ExternalLink, FileText, Image, Activity, LayoutDashboard, Globe } from "lucide-react";
 import { useEffect, useState } from "react";
-import { cn } from "@/lib/utils";
+import { cn, useIsMobile } from "@/lib/utils";
 
 const appIcons: Record<WindowType, React.ReactNode> = {
   terminal: <Terminal size={18} />,
@@ -37,6 +37,7 @@ const dockApps = [
 export default function Taskbar() {
   const { windows, focusOrder, openWindow, focusWindow, minimizeWindow, restoreWindow, closeAll } = useOSStore();
   const activeWindowId = focusOrder[focusOrder.length - 1] ?? null;
+  const isMobile = useIsMobile();
   const [time, setTime] = useState("");
 
   // Track minimized-all state (show desktop)
@@ -104,14 +105,17 @@ export default function Taskbar() {
 
   return (
     <div className="fixed bottom-4 left-0 right-0 z-50 flex items-center justify-center pointer-events-none">
-      <div className="flex items-center gap-2 pointer-events-auto">
+      <div className={cn(
+        "flex items-center gap-2 pointer-events-auto",
+        isMobile && "overflow-x-auto scrollbar-none max-w-[calc(100vw-32px)] px-2",
+      )}>
         {combinedApps.map((app) => {
           const isRunning = windows.some(w => w.type === app.type && !w.isMinimized);
           const isActive = activeType === app.type;
           return (
             <motion.button
               key={app.type}
-              whileHover={{ scale: 1.18, y: -6 }}
+              whileHover={isMobile ? {} : { scale: 1.18, y: -6 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => handleDockClick(app.type as WindowType, app.label)}
               title={app.label}

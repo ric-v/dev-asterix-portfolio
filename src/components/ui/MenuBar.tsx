@@ -18,6 +18,14 @@ export default function MenuBar() {
   const repos = useOSStore((s) => s.repos);
   const openWindow = useOSStore((s) => s.openWindow);
 
+  // System-tray popover state (click/tap toggle for touch support)
+  const [wifiOpen, setWifiOpen] = useState(false);
+  const [batteryOpen, setBatteryOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const wifiRef = useRef<HTMLDivElement>(null);
+  const batteryRef = useRef<HTMLDivElement>(null);
+  const calendarRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -27,6 +35,21 @@ export default function MenuBar() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Close system-tray popovers on click/touch outside
+  useEffect(() => {
+    function handleOutside(e: MouseEvent | TouchEvent) {
+      if (wifiOpen && wifiRef.current && !wifiRef.current.contains(e.target as Node)) setWifiOpen(false);
+      if (batteryOpen && batteryRef.current && !batteryRef.current.contains(e.target as Node)) setBatteryOpen(false);
+      if (calendarOpen && calendarRef.current && !calendarRef.current.contains(e.target as Node)) setCalendarOpen(false);
+    }
+    document.addEventListener('mousedown', handleOutside, true);
+    document.addEventListener('touchstart', handleOutside, true);
+    return () => {
+      document.removeEventListener('mousedown', handleOutside, true);
+      document.removeEventListener('touchstart', handleOutside, true);
+    };
+  }, [wifiOpen, batteryOpen, calendarOpen]);
 
   const liveDemos = repos.filter(r => r.homepage && r.homepage.trim() !== "");
 
@@ -130,15 +153,16 @@ export default function MenuBar() {
           <ThemeToggle />
 
           {/* Wi-Fi bars */}
-          <div className="relative group flex items-center h-full px-1.5">
-            <div className="hidden sm:flex items-end gap-[2px] h-3.5 cursor-default">
+          <div ref={wifiRef} className="relative flex items-center h-full px-1.5 cursor-pointer" onClick={() => setWifiOpen(o => !o)}>
+            <div className="hidden sm:flex items-end gap-[2px] h-3.5">
               <div className="w-[3px] h-[4px] rounded-sm bg-foreground/40" />
               <div className="w-[3px] h-[6px] rounded-sm bg-cyan-glowing/80" />
               <div className="w-[3px] h-[9px] rounded-sm bg-cyan-glowing/80" />
               <div className="w-[3px] h-[12px] rounded-sm bg-cyan-glowing" />
             </div>
             {/* Wi-Fi Popover */}
-            <div className="absolute top-full right-0 mt-1 w-48 bg-background/95 backdrop-blur-3xl border border-glass-border rounded-lg shadow-2xl py-2 px-3 hidden group-hover:flex flex-col gap-1.5 z-100 animate-in fade-in zoom-in-95 duration-100">
+            {wifiOpen && (
+            <div className="absolute top-full right-0 mt-1 w-48 max-w-[calc(100vw-16px)] bg-background/95 backdrop-blur-3xl border border-glass-border rounded-lg shadow-2xl py-2 px-3 flex flex-col gap-1.5 z-100 animate-in fade-in zoom-in-95 duration-100">
               <div className="flex items-center gap-2 text-foreground/90 font-semibold border-b border-glass-border pb-1.5 mb-0.5">
                 <Wifi size={14} className="text-cyan-glowing" />
                 <span>Wi-Fi Network</span>
@@ -156,11 +180,12 @@ export default function MenuBar() {
                 <span className="font-mono">192.168.1.104</span>
               </div>
             </div>
+            )}
           </div>
 
           {/* Battery */}
-          <div className="relative group flex items-center h-full px-1.5">
-            <div className="hidden sm:flex items-center gap-1 cursor-default">
+          <div ref={batteryRef} className="relative flex items-center h-full px-1.5 cursor-pointer" onClick={() => setBatteryOpen(o => !o)}>
+            <div className="flex items-center gap-1">
               {/* Battery icon with fill */}
               <div className="relative w-5 h-3 border border-foreground/40 rounded-[2px] flex items-center">
                 {/* Terminal nub */}
@@ -175,13 +200,14 @@ export default function MenuBar() {
                 />
               </div>
               {batteryLevel !== null && (
-                <span className={`text-[10px] ${batteryColor}`}>{batteryLevel}%</span>
+                <span className={`hidden sm:inline text-[10px] ${batteryColor}`}>{batteryLevel}%</span>
               )}
               {isCharging && <span className="text-yellow-400 text-[10px]">⚡</span>}
             </div>
 
             {/* Battery Popover */}
-            <div className="absolute top-full right-0 mt-1 w-48 bg-background/95 backdrop-blur-3xl border border-glass-border rounded-lg shadow-2xl py-2 px-3 hidden group-hover:flex flex-col gap-1.5 z-100 animate-in fade-in zoom-in-95 duration-100">
+            {batteryOpen && (
+            <div className="absolute top-full right-0 mt-1 w-48 max-w-[calc(100vw-16px)] bg-background/95 backdrop-blur-3xl border border-glass-border rounded-lg shadow-2xl py-2 px-3 flex flex-col gap-1.5 z-100 animate-in fade-in zoom-in-95 duration-100">
               <div className="flex items-center gap-2 text-foreground/90 font-semibold border-b border-glass-border pb-1.5 mb-0.5">
                 {isCharging ? <BatteryCharging size={14} className="text-yellow-400" /> : <BatteryMedium size={14} className="text-cyan-glowing" />}
                 <span>Power</span>
@@ -201,18 +227,20 @@ export default function MenuBar() {
                 <span>{isCharging ? 'AC Adapter' : 'Battery'}</span>
               </div>
             </div>
+            )}
           </div>
 
           {/* Clock / Calendar */}
-          <div className="relative group flex items-center h-full px-1.5 cursor-default">
-            <span className="tabular-nums text-foreground/80 w-[68px] text-right">
+          <div ref={calendarRef} className="relative flex items-center h-full px-1.5 cursor-pointer" onClick={() => setCalendarOpen(o => !o)}>
+            <span className="tabular-nums text-foreground/80 w-[68px] text-right select-none">
               {time
                 ? time.toLocaleTimeString([], { weekday: "short", hour: "2-digit", minute: "2-digit" }).replace(",", "")
                 : "..."}
             </span>
 
             {/* Calendar Popover */}
-            <div className="absolute top-full right-0 mt-1 w-64 bg-background/95 backdrop-blur-3xl border border-glass-border rounded-lg shadow-2xl p-3 hidden group-hover:block z-100 animate-in fade-in zoom-in-95 duration-100">
+            {calendarOpen && (
+            <div className="absolute top-full right-0 mt-1 w-64 max-w-[calc(100vw-16px)] bg-background/95 backdrop-blur-3xl border border-glass-border rounded-lg shadow-2xl p-3 block z-100 animate-in fade-in zoom-in-95 duration-100">
               <div className="flex items-center gap-2 text-foreground/90 font-semibold border-b border-glass-border pb-2 mb-2">
                 <Calendar size={14} className="text-cyan-glowing shrink-0" />
                 <span className="text-xs truncate">
@@ -249,6 +277,7 @@ export default function MenuBar() {
                 })()}
               </div>
             </div>
+            )}
           </div>
 
           {/* Reboot — extreme right */}

@@ -17,8 +17,14 @@ export default function CommandPalette() {
       }
     };
 
+    const openFromFAB = () => setIsOpen(true);
+
     document.addEventListener("keydown", down);
-    return () => document.removeEventListener("keydown", down);
+    window.addEventListener("open-command-palette", openFromFAB);
+    return () => {
+      document.removeEventListener("keydown", down);
+      window.removeEventListener("open-command-palette", openFromFAB);
+    };
   }, []);
 
   const runCommand = (command: () => void) => {
