@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { GitHubRepo } from "@/lib/github";
-import { FolderGit2, Star, ExternalLink, Activity, Archive, CheckCircle2 } from "lucide-react";
+import { FolderGit2, Star, GitFork, ExternalLink, Activity, Archive, CheckCircle2, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useOSStore } from "@/store/useOSStore";
 
@@ -112,6 +113,12 @@ function RepositoryCard({ repo, compact }: { repo: GitHubRepo, compact: boolean 
           <Star size={12} className={repo.stargazers_count > 10 ? "text-amber-400" : ""} />
           {repo.stargazers_count}
         </span>
+        {repo.forks_count > 0 && (
+          <span className="flex items-center gap-1">
+            <GitFork size={12} />
+            {repo.forks_count}
+          </span>
+        )}
         <span className="ml-auto text-[10px]">
           Updated {formatDistanceToNow(updatedAt)} ago
         </span>
@@ -122,6 +129,8 @@ function RepositoryCard({ repo, compact }: { repo: GitHubRepo, compact: boolean 
 
 export default function RepoList() {
   const { repos, settings } = useOSStore();
+  const [langFilter, setLangFilter] = useState<string | null>(null);
+  const [topicFilter, setTopicFilter] = useState<string | null>(null);
 
   if (!repos || repos.length === 0) {
     return (
@@ -134,41 +143,120 @@ export default function RepoList() {
   // Apply settings
   let filteredRepos = repos.filter(r => {
     if (!settings.showForked && r.fork) return false;
-    // Note: GitHub repo interface might need `archived: boolean` added to it properly. 
-    // Usually it exists, but TypeScript might not know yet. We'll cast just in case.
     if (!settings.showArchived && (r as any).archived) return false;
     return true;
   });
 
   // Apply sorting
   filteredRepos = filteredRepos.sort((a, b) => {
-    if (settings.sortMode === 'stars') {
-      return b.stargazers_count - a.stargazers_count;
-    }
-    if (settings.sortMode === 'name') {
-      return a.name.localeCompare(b.name);
-    }
-    // last_updated is default
+    if (settings.sortMode === 'stars') return b.stargazers_count - a.stargazers_count;
+    if (settings.sortMode === 'name') return a.name.localeCompare(b.name);
     return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
   });
 
+  // Derive unique languages and top topics for filter chips
+  const allLanguages = Array.from(
+    new Set(filteredRepos.map(r => r.language).filter(Boolean) as string[])
+  ).sort();
+
+  const topicCounts: Record<string, number> = {};
+  filteredRepos.forEach(r => {
+    (r.topics ?? []).forEach(t => { topicCounts[t] = (topicCounts[t] ?? 0) + 1; });
+  });
+  const topTopics = Object.entries(topicCounts)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 10)
+    .map(([t]) => t);
+
+  // Apply active filter chips
+  const displayRepos = filteredRepos.filter(r => {
+    if (langFilter && r.language !== langFilter) return false;
+    if (topicFilter && !(r.topics ?? []).includes(topicFilter)) return false;
+    return true;
+  });
+
+  const hasActiveFilter = langFilter !== null || topicFilter !== null;
+
   return (
     <div className="w-full h-full p-4 overflow-y-auto font-sans flex flex-col gap-4 custom-scrollbar">
-      <div className="flex items-center justify-between mb-2 border-b border-glass-border pb-2 shrink-0">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-glass-border pb-2 shrink-0">
         <div className="flex items-center gap-2">
           <FolderGit2 className="text-cyan-glowing" size={18} />
           <h2 className="font-semibold text-lg hover:text-cyan-glowing transition-colors">Repositories</h2>
           <span className="text-xs px-2 py-0.5 rounded-full bg-foreground/10 text-foreground/60 ml-2">
-            {filteredRepos.length}
+            {displayRepos.length}{hasActiveFilter ? ` / ${filteredRepos.length}` : ''}
           </span>
         </div>
+        {hasActiveFilter && (
+          <button
+            onClick={() => { setLangFilter(null); setTopicFilter(null); }}
+            className="flex items-center gap-1 text-[10px] text-foreground/50 hover:text-foreground transition-colors px-2 py-1 rounded-md hover:bg-foreground/10"
+          >
+            <X size={10} /> Clear filters
+          </button>
+        )}
       </div>
 
-      <div className={`grid gap-4 ${settings.compactMode ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'}`}>
-        {filteredRepos.map((repo) => (
-          <RepositoryCard key={repo.id} repo={repo} compact={settings.compactMode} />
-        ))}
-      </div>
+      {/* Filter chips */}
+      {(allLanguages.length > 1 || topTopics.length > 0) && (
+        <div className="flex flex-col gap-2 shrink-0">
+          {/* Language chips */}
+          {allLanguages.length > 1 && (
+            <div className="flex flex-wrap gap-1.5 items-center">
+              <span className="text-[10px] text-foreground/40 font-mono mr-1">lang:</span>
+              {allLanguages.map(lang => (
+                <button
+                  key={lang}
+                  onClick={() => setLangFilter(langFilter === lang ? null : lang)}
+                  className={`flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-full border transition-all ${
+                    langFilter === lang
+                      ? 'border-cyan-glowing bg-cyan-glowing/15 text-cyan-glowing'
+                      : 'border-glass-border bg-foreground/5 text-foreground/50 hover:border-cyan-glowing/40 hover:text-foreground/70'
+                  }`}
+                >
+                  <span
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: languageColors[lang] || '#888' }}
+                  />
+                  {lang}
+                </button>
+              ))}
+            </div>
+          )}
+          {/* Topic chips */}
+          {topTopics.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 items-center">
+              <span className="text-[10px] text-foreground/40 font-mono mr-1">topic:</span>
+              {topTopics.map(topic => (
+                <button
+                  key={topic}
+                  onClick={() => setTopicFilter(topicFilter === topic ? null : topic)}
+                  className={`text-[10px] px-2 py-0.5 rounded-full border transition-all ${
+                    topicFilter === topic
+                      ? 'border-emerald-500/60 bg-emerald-500/10 text-emerald-400'
+                      : 'border-glass-border bg-foreground/5 text-foreground/50 hover:border-emerald-500/30 hover:text-foreground/70'
+                  }`}
+                >
+                  {topic}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {displayRepos.length === 0 ? (
+        <div className="flex items-center justify-center flex-1 text-foreground/40 font-mono text-xs">
+          No repositories match the selected filters.
+        </div>
+      ) : (
+        <div className={`grid gap-4 ${settings.compactMode ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'}`}>
+          {displayRepos.map((repo) => (
+            <RepositoryCard key={repo.id} repo={repo} compact={settings.compactMode} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -70,7 +70,7 @@ export default function WelcomeApp() {
           LinkedIn
         </a>
         <a
-          href="mailto:contact@asterix.dev"
+          href="mailto:support@astrx.dev"
           className="flex items-center gap-2 px-4 py-2 rounded bg-cyan-glowing/10 border border-cyan-glowing/30 text-cyan-glowing hover:bg-cyan-glowing/20 transition-colors font-medium text-sm"
         >
           <Mail size={18} />

@@ -27,14 +27,17 @@ export const DEMO_REGISTRY: Record<string, string> = {
 
 // ── Static internal path table ───────────────────────────────────────────────
 export const INTERNAL_ROUTES: Record<string, InternalPath> = {
-  "/":          "home",
-  "/home":      "home",
-  "/settings":  "settings",
-  "/monitor":   "monitor",
-  "/activity":  "monitor",
-  "/computer":  "computer",
-  "/projects":  "repos",
-  "/repos":     "repos",
+  "/":           "home",
+  "/home":       "home",
+  "/settings":   "settings",
+  "/monitor":    "monitor",
+  "/activity":   "monitor",
+  "/computer":   "computer",
+  "/projects":   "repos",
+  "/repos":      "repos",
+  "/timeline":   "timeline",
+  "/dashboard":  "dashboard",
+  "/resume":     "resume",
 };
 
 export type InternalPath =
@@ -42,7 +45,10 @@ export type InternalPath =
   | "settings"
   | "monitor"
   | "computer"
-  | "repos";
+  | "repos"
+  | "timeline"
+  | "dashboard"
+  | "resume";
 
 export type RouteType = "newtab" | "internal" | "repo" | "demo" | "external" | "notfound";
 

@@ -125,6 +125,23 @@ const STACK_PATTERNS: Record<string, { pattern: RegExp; category: keyof ProjectS
   'mocha': [{ pattern: /mocha/i, category: 'testing' }],
   'pytest': [{ pattern: /pytest/i, category: 'testing' }],
   'rspec': [{ pattern: /rspec/i, category: 'testing' }],
+
+  // Go frameworks
+  'gin': [{ pattern: /gin-gonic\/gin/i, category: 'frameworks' }],
+  'fiber': [{ pattern: /gofiber\/fiber/i, category: 'frameworks' }],
+  'echo': [{ pattern: /labstack\/echo/i, category: 'frameworks' }],
+  'gorilla': [{ pattern: /gorilla\/mux/i, category: 'frameworks' }],
+
+  // Rust frameworks
+  'actix': [{ pattern: /actix-web/i, category: 'frameworks' }],
+  'axum': [{ pattern: /axum/i, category: 'frameworks' }],
+  'tokio': [{ pattern: /tokio/i, category: 'frameworks' }],
+  'rocket': [{ pattern: /rocket/i, category: 'frameworks' }],
+
+  // Ruby frameworks
+  'rails': [{ pattern: /rails/i, category: 'frameworks' }],
+  'sinatra': [{ pattern: /sinatra/i, category: 'frameworks' }],
+  'grape': [{ pattern: /grape/i, category: 'frameworks' }],
 };
 
 async function detectProjectStack(username: string, repo: string): Promise<ProjectStack> {
@@ -174,10 +191,93 @@ async function detectProjectStack(username: string, repo: string): Promise<Proje
     }
   }
 
+  // Try go.mod (Go projects)
+  const goMod = await fetchFileContent(username, repo, 'go.mod');
+  if (goMod) {
+    for (const [key, patterns] of Object.entries(STACK_PATTERNS)) {
+      for (const { pattern, category } of patterns) {
+        if (pattern.test(goMod)) {
+          if (!stack[category].includes(key)) {
+            stack[category].push(key);
+          }
+        }
+      }
+    }
+  }
+
+  // Try Cargo.toml (Rust projects)
+  const cargoToml = await fetchFileContent(username, repo, 'Cargo.toml');
+  if (cargoToml) {
+    for (const [key, patterns] of Object.entries(STACK_PATTERNS)) {
+      for (const { pattern, category } of patterns) {
+        if (pattern.test(cargoToml)) {
+          if (!stack[category].includes(key)) {
+            stack[category].push(key);
+          }
+        }
+      }
+    }
+  }
+
+  // Try Gemfile (Ruby projects)
+  const gemfile = await fetchFileContent(username, repo, 'Gemfile');
+  if (gemfile) {
+    for (const [key, patterns] of Object.entries(STACK_PATTERNS)) {
+      for (const { pattern, category } of patterns) {
+        if (pattern.test(gemfile)) {
+          if (!stack[category].includes(key)) {
+            stack[category].push(key);
+          }
+        }
+      }
+    }
+  }
+
   return stack;
 }
 
 // ===== COMMIT ANALYSIS =====
+
+function computeStreaks(activity: CommitActivity[]): {
+  longestStreak: number;
+  currentStreak: number;
+  mostActiveDay: number;
+} {
+  // Sum commits by day-of-week (0=Sun … 6=Sat) to find most active day
+  const dowTotals = [0, 0, 0, 0, 0, 0, 0];
+  activity.forEach(w => {
+    w.days.forEach((count, dow) => { dowTotals[dow] += count; });
+  });
+  const mostActiveDay = dowTotals.indexOf(Math.max(...dowTotals));
+
+  // Flatten all days in chronological order
+  const allDays: number[] = [];
+  activity.forEach(w => w.days.forEach(c => allDays.push(c)));
+
+  // Longest streak (consecutive days with at least one commit)
+  let longestStreak = 0;
+  let streak = 0;
+  for (const commits of allDays) {
+    if (commits > 0) {
+      streak++;
+      if (streak > longestStreak) longestStreak = streak;
+    } else {
+      streak = 0;
+    }
+  }
+
+  // Current streak (walk backwards from today)
+  let currentStreak = 0;
+  for (let i = allDays.length - 1; i >= 0; i--) {
+    if (allDays[i] > 0) {
+      currentStreak++;
+    } else {
+      break;
+    }
+  }
+
+  return { longestStreak, currentStreak, mostActiveDay };
+}
 
 function classifyActivityStatus(daysSinceUpdate: number, archived: boolean): RepoActivityStatus {
   if (archived) return RepoActivityStatus.ARCHIVED;
@@ -223,9 +323,7 @@ function computeActivityGraph(activity: CommitActivity[] | null | undefined): Ac
       commitsLast30Days: commitsLast30,
       commitsLast90Days: commitsLast90,
       averageCommitsPerMonth: Math.round(commitsLast90 / 3),
-      longestStreak: 0, // TODO: compute from days array
-      currentStreak: 0, // TODO: compute from days array
-      mostActiveDay: 0, // TODO: compute from days array
+      ...computeStreaks(activity),
     },
   };
 }

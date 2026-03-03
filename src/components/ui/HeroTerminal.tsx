@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Github, Mail, Terminal, Code, Layers, Hexagon, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 
-export default function HeroTerminal() {
+export default function HeroTerminal({ onInitialize }: { onInitialize?: () => void }) {
   const [whoamiText, setWhoamiText] = useState("");
   const fullText = "whoami";
 
@@ -121,7 +121,12 @@ export default function HeroTerminal() {
           </div>
         </div>
 
-        <button className="px-4 py-1.5 rounded border border-glass-border hover:border-cyan-glowing text-xs font-mono text-foreground hover:text-cyan-glowing transition-all whitespace-nowrap">
+        <button
+          onClick={() => {
+            onInitialize?.();
+            window.dispatchEvent(new CustomEvent('asterix:boot'));
+          }}
+          className="px-4 py-1.5 rounded border border-glass-border hover:border-cyan-glowing text-xs font-mono text-foreground hover:text-cyan-glowing transition-all whitespace-nowrap">
           INITIALIZE
         </button>
       </motion.div>
