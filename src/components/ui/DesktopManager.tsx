@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import DesktopIcon from "./DesktopIcon";
 import Window from "./Window";
 import RepoList from "./RepoList";
 import { GitHubRepo } from "@/lib/github";
-import { Link, FolderGit2, HardDrive, Folder, RefreshCw, Monitor, FileTerminal, Settings, Info, Briefcase, ChevronRight, ExternalLink, Globe, FileText } from "lucide-react";
+import { Link, FolderGit2, HardDrive, Folder, RefreshCw, Monitor, FileTerminal, Settings, Info, Briefcase, ChevronRight, ExternalLink, Globe, FileText, Search } from "lucide-react";
 import CommandPalette from "./CommandPalette";
+import { useIsMobile } from "@/lib/utils";
 import TerminalApp from "../apps/TerminalApp";
 import FileExplorer from "../apps/FileExplorer";
 import SettingsApp from "../apps/SettingsApp";
@@ -49,7 +50,35 @@ export default function DesktopManager({ repos, systemInfo }: DesktopManagerProp
   } = useOSStore();
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const isMobile = useIsMobile();
   const kernel = useKernel();
+
+  // Long-press → context menu (mobile equivalent of right-click)
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchPosRef = useRef<{ x: number; y: number } | null>(null);
+
+  const handleLongPressStart = useCallback((e: React.TouchEvent) => {
+    if ((e.target as HTMLElement).closest('button, a, [role="button"]')) return;
+    const touch = e.touches[0];
+    touchPosRef.current = { x: touch.clientX, y: touch.clientY };
+    longPressTimerRef.current = setTimeout(() => {
+      if (touchPosRef.current) {
+        setContextMenu({ x: touchPosRef.current.x, y: touchPosRef.current.y });
+      }
+    }, 600);
+  }, []);
+
+  const handleLongPressCancel = useCallback((e: React.TouchEvent) => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    if (e.type === 'touchmove' && e.touches[0] && touchPosRef.current) {
+      const dx = Math.abs(e.touches[0].clientX - touchPosRef.current.x);
+      const dy = Math.abs(e.touches[0].clientY - touchPosRef.current.y);
+      if (dx > 10 || dy > 10) touchPosRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     setRepos(repos);
@@ -111,7 +140,14 @@ export default function DesktopManager({ repos, systemInfo }: DesktopManagerProp
   }, [setRepos, pushNotification]);
 
   return (
-    <div className="w-full h-full absolute inset-0 overflow-hidden" onClick={closeContextMenu} onContextMenu={handleContextMenu}>
+    <div
+      className="w-full h-full absolute inset-0 overflow-hidden"
+      onClick={closeContextMenu}
+      onContextMenu={handleContextMenu}
+      onTouchStart={handleLongPressStart}
+      onTouchMove={handleLongPressCancel}
+      onTouchEnd={handleLongPressCancel}
+    >
       {/* System-wide notification toasts */}
       <NotificationCenter />
 
@@ -121,38 +157,63 @@ export default function DesktopManager({ repos, systemInfo }: DesktopManagerProp
       <CommandPalette />
 
       {/* Desktop Icons */}
-      <div className="absolute top-24 bottom-24 left-6 flex flex-col flex-wrap gap-6 items-start content-start z-0">
-        <DesktopIcon
-          id="icon-computer"
-          label="My Computer"
-          icon={<HardDrive size={24} />}
-          onClick={() => openWindow("computer", "My Computer", 150, 150)}
-        />
-        <DesktopIcon
-          id="icon-repos"
-          label="Repositories"
-          icon={<FolderGit2 size={24} />}
-          onClick={() => openWindow("terminal", "projects — dev-asterix", 200, 180)}
-        />
-        <DesktopIcon
-          id="icon-browser"
-          label="Browser"
-          icon={<Globe size={24} />}
-          onClick={() => openWindow("browser", "Asterix Browser", 200, 180, { url: "about:newtab" })}
-        />
-        <DesktopIcon
-          id="icon-notepad"
-          label="Notepad"
-          icon={<FileText size={24} />}
-          onClick={() => openWindow("notepad", "Notepad", 240, 220)}
-        />
-        <DesktopIcon
-          id="icon-links"
-          label="Quick Links"
-          icon={<Link size={24} />}
-          onClick={() => openWindow("links", "quick_links.txt", 250, 220)}
-        />
-      </div>
+      {isMobile ? (
+        /* Mobile: home-screen style grid below the menu bar */
+        <div className="absolute top-10 bottom-16 left-0 right-0 overflow-y-auto overflow-x-hidden">
+          <div className="grid grid-cols-4 gap-3 p-4 pt-6">
+            <DesktopIcon id="icon-computer" label="Computer" icon={<HardDrive size={24} />} onClick={() => openWindow("computer", "My Computer", 0, 0)} />
+            <DesktopIcon id="icon-repos" label="Repos" icon={<FolderGit2 size={24} />} onClick={() => openWindow("terminal", "projects — dev-asterix", 0, 0)} />
+            <DesktopIcon id="icon-browser" label="Browser" icon={<Globe size={24} />} onClick={() => openWindow("browser", "Asterix Browser", 0, 0, { url: "about:newtab" })} />
+            <DesktopIcon id="icon-notepad" label="Notepad" icon={<FileText size={24} />} onClick={() => openWindow("notepad", "Notepad", 0, 0)} />
+            <DesktopIcon id="icon-links" label="Links" icon={<Link size={24} />} onClick={() => openWindow("links", "quick_links.txt", 0, 0)} />
+          </div>
+        </div>
+      ) : (
+        /* Desktop: macOS-style left column */
+        <div className="absolute top-24 bottom-24 left-6 flex flex-col flex-wrap gap-6 items-start content-start z-0">
+          <DesktopIcon
+            id="icon-computer"
+            label="My Computer"
+            icon={<HardDrive size={24} />}
+            onClick={() => openWindow("computer", "My Computer", 150, 150)}
+          />
+          <DesktopIcon
+            id="icon-repos"
+            label="Repositories"
+            icon={<FolderGit2 size={24} />}
+            onClick={() => openWindow("terminal", "projects — dev-asterix", 200, 180)}
+          />
+          <DesktopIcon
+            id="icon-browser"
+            label="Browser"
+            icon={<Globe size={24} />}
+            onClick={() => openWindow("browser", "Asterix Browser", 200, 180, { url: "about:newtab" })}
+          />
+          <DesktopIcon
+            id="icon-notepad"
+            label="Notepad"
+            icon={<FileText size={24} />}
+            onClick={() => openWindow("notepad", "Notepad", 240, 220)}
+          />
+          <DesktopIcon
+            id="icon-links"
+            label="Quick Links"
+            icon={<Link size={24} />}
+            onClick={() => openWindow("links", "quick_links.txt", 250, 220)}
+          />
+        </div>
+      )}
+
+      {/* CommandPalette FAB — mobile only */}
+      {isMobile && (
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
+          className="fixed bottom-20 right-4 z-50 w-11 h-11 flex items-center justify-center rounded-full bg-cyan-glowing/20 border border-cyan-glowing/40 text-cyan-glowing shadow-lg backdrop-blur-md"
+          aria-label="Open command palette"
+        >
+          <Search size={18} />
+        </button>
+      )}
 
       {/* Render Open Windows */}
       {openWindows.map((win) => {

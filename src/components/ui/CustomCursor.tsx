@@ -4,8 +4,14 @@ import { useEffect, useState } from "react";
 import { motion, useMotionValue, useSpring } from "framer-motion";
 
 export default function CustomCursor() {
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
+
+  useEffect(() => {
+    // Don't render on touch / pointer-coarse devices (mobile, tablets)
+    setIsTouchDevice(window.matchMedia('(pointer: coarse)').matches);
+  }, []);
 
   // Use motion values for 60fps tracking without React re-renders
   const mouseX = useMotionValue(-100);
@@ -53,6 +59,8 @@ export default function CustomCursor() {
       window.removeEventListener("mouseover", handleMouseOver);
     };
   }, [mouseX, mouseY]);
+
+  if (isTouchDevice) return null;
 
   return (
     <>

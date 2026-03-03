@@ -143,6 +143,7 @@ export const useOSStore = create<OSState>()(
         const pid = get().nextPid;
         const id = `${type}-${pid}-${Date.now()}`;
         const offset = get().windows.filter(w => !w.isMinimized).length * 22;
+        const isMobileViewport = typeof window !== 'undefined' && window.innerWidth < 640;
         const defaultX = typeof window !== 'undefined' ? Math.max(20, window.innerWidth / 2 - 250 + offset) : 120;
         const defaultY = typeof window !== 'undefined' ? Math.max(50, window.innerHeight / 2 - 200 + offset) : 80;
 
@@ -152,8 +153,8 @@ export const useOSStore = create<OSState>()(
           y: y ?? defaultY,
           metadata,
           isMinimized: false,
-          isMaximized: type === 'browser',
-          snapState: type === 'browser' ? 'maximized' : 'none',
+          isMaximized: type === 'browser' || isMobileViewport,
+          snapState: (type === 'browser' || isMobileViewport) ? 'maximized' : 'none',
           pid,
           startedAt: Date.now(),
           memoryUsage: simulateMem(type),
