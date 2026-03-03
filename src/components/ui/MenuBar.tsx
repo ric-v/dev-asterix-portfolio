@@ -162,29 +162,29 @@ export default function MenuBar() {
             </div>
             {/* Wi-Fi Popover */}
             {wifiOpen && (
-            <div className="absolute top-full right-0 mt-1 w-48 max-w-[calc(100vw-16px)] bg-background/95 backdrop-blur-3xl border border-glass-border rounded-lg shadow-2xl py-2 px-3 flex flex-col gap-1.5 z-100 animate-in fade-in zoom-in-95 duration-100">
-              <div className="flex items-center gap-2 text-foreground/90 font-semibold border-b border-glass-border pb-1.5 mb-0.5">
-                <Wifi size={14} className="text-cyan-glowing" />
-                <span>Wi-Fi Network</span>
+              <div className="absolute top-full right-0 mt-1 w-48 max-w-[calc(100vw-16px)] bg-background/95 backdrop-blur-3xl border border-glass-border rounded-lg shadow-2xl py-2 px-3 flex flex-col gap-1.5 z-100 animate-in fade-in zoom-in-95 duration-100">
+                <div className="flex items-center gap-2 text-foreground/90 font-semibold border-b border-glass-border pb-1.5 mb-0.5">
+                  <Wifi size={14} className="text-cyan-glowing" />
+                  <span>Wi-Fi Network</span>
+                </div>
+                <div className="flex justify-between items-center text-[10px] text-foreground/70">
+                  <span>Status</span>
+                  <span className="text-emerald-400 font-medium tracking-wide">Connected</span>
+                </div>
+                <div className="flex justify-between items-center text-[10px] text-foreground/70">
+                  <span>Network</span>
+                  <span>asterix-5G</span>
+                </div>
+                <div className="flex justify-between items-center text-[10px] text-foreground/70">
+                  <span>IP Address</span>
+                  <span className="font-mono">192.168.1.104</span>
+                </div>
               </div>
-              <div className="flex justify-between items-center text-[10px] text-foreground/70">
-                <span>Status</span>
-                <span className="text-emerald-400 font-medium tracking-wide">Connected</span>
-              </div>
-              <div className="flex justify-between items-center text-[10px] text-foreground/70">
-                <span>Network</span>
-                <span>asterix-5G</span>
-              </div>
-              <div className="flex justify-between items-center text-[10px] text-foreground/70">
-                <span>IP Address</span>
-                <span className="font-mono">192.168.1.104</span>
-              </div>
-            </div>
             )}
           </div>
 
           {/* Battery */}
-          <div ref={batteryRef} className="relative flex items-center h-full px-1.5 cursor-pointer" onClick={() => setBatteryOpen(o => !o)}>
+          <div ref={batteryRef} className="hidden sm:flex relative items-center h-full px-1.5 cursor-pointer" onClick={() => setBatteryOpen(o => !o)}>
             <div className="flex items-center gap-1">
               {/* Battery icon with fill */}
               <div className="relative w-5 h-3 border border-foreground/40 rounded-[2px] flex items-center">
@@ -207,26 +207,26 @@ export default function MenuBar() {
 
             {/* Battery Popover */}
             {batteryOpen && (
-            <div className="absolute top-full right-0 mt-1 w-48 max-w-[calc(100vw-16px)] bg-background/95 backdrop-blur-3xl border border-glass-border rounded-lg shadow-2xl py-2 px-3 flex flex-col gap-1.5 z-100 animate-in fade-in zoom-in-95 duration-100">
-              <div className="flex items-center gap-2 text-foreground/90 font-semibold border-b border-glass-border pb-1.5 mb-0.5">
-                {isCharging ? <BatteryCharging size={14} className="text-yellow-400" /> : <BatteryMedium size={14} className="text-cyan-glowing" />}
-                <span>Power</span>
+              <div className="absolute top-full right-0 mt-1 w-48 max-w-[calc(100vw-16px)] bg-background/95 backdrop-blur-3xl border border-glass-border rounded-lg shadow-2xl py-2 px-3 flex flex-col gap-1.5 z-100 animate-in fade-in zoom-in-95 duration-100">
+                <div className="flex items-center gap-2 text-foreground/90 font-semibold border-b border-glass-border pb-1.5 mb-0.5">
+                  {isCharging ? <BatteryCharging size={14} className="text-yellow-400" /> : <BatteryMedium size={14} className="text-cyan-glowing" />}
+                  <span>Power</span>
+                </div>
+                <div className="flex justify-between items-center text-[10px] text-foreground/70">
+                  <span>Status</span>
+                  <span className={isCharging ? "text-yellow-400 font-medium" : "text-foreground/90 font-medium"}>
+                    {isCharging ? "Charging" : "Discharging"}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-[10px] text-foreground/70">
+                  <span>Level</span>
+                  <span className={batteryColor}>{batteryLevel !== null ? `${batteryLevel}%` : 'Unknown'}</span>
+                </div>
+                <div className="flex justify-between items-center text-[10px] text-foreground/70">
+                  <span>Power Source</span>
+                  <span>{isCharging ? 'AC Adapter' : 'Battery'}</span>
+                </div>
               </div>
-              <div className="flex justify-between items-center text-[10px] text-foreground/70">
-                <span>Status</span>
-                <span className={isCharging ? "text-yellow-400 font-medium" : "text-foreground/90 font-medium"}>
-                  {isCharging ? "Charging" : "Discharging"}
-                </span>
-              </div>
-              <div className="flex justify-between items-center text-[10px] text-foreground/70">
-                <span>Level</span>
-                <span className={batteryColor}>{batteryLevel !== null ? `${batteryLevel}%` : 'Unknown'}</span>
-              </div>
-              <div className="flex justify-between items-center text-[10px] text-foreground/70">
-                <span>Power Source</span>
-                <span>{isCharging ? 'AC Adapter' : 'Battery'}</span>
-              </div>
-            </div>
             )}
           </div>
 
@@ -240,43 +240,43 @@ export default function MenuBar() {
 
             {/* Calendar Popover */}
             {calendarOpen && (
-            <div className="absolute top-full right-0 mt-1 w-64 max-w-[calc(100vw-16px)] bg-background/95 backdrop-blur-3xl border border-glass-border rounded-lg shadow-2xl p-3 block z-100 animate-in fade-in zoom-in-95 duration-100">
-              <div className="flex items-center gap-2 text-foreground/90 font-semibold border-b border-glass-border pb-2 mb-2">
-                <Calendar size={14} className="text-cyan-glowing shrink-0" />
-                <span className="text-xs truncate">
-                  {time ? time.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) : '...'}
-                </span>
-              </div>
-              <div className="grid grid-cols-7 gap-1 text-center text-[10px] mb-1 text-foreground/50 font-bold">
-                {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => <div key={d}>{d}</div>)}
-              </div>
-              <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-mono">
-                {time && (() => {
-                  const year = time.getFullYear();
-                  const month = time.getMonth();
-                  const firstDay = new Date(year, month, 1).getDay();
-                  const daysInMonth = new Date(year, month + 1, 0).getDate();
-                  const currentDay = time.getDate();
+              <div className="absolute top-full right-0 mt-1 w-64 max-w-[calc(100vw-16px)] bg-background/95 backdrop-blur-3xl border border-glass-border rounded-lg shadow-2xl p-3 block z-100 animate-in fade-in zoom-in-95 duration-100">
+                <div className="flex items-center gap-2 text-foreground/90 font-semibold border-b border-glass-border pb-2 mb-2">
+                  <Calendar size={14} className="text-cyan-glowing shrink-0" />
+                  <span className="text-xs truncate">
+                    {time ? time.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) : '...'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-7 gap-1 text-center text-[10px] mb-1 text-foreground/50 font-bold">
+                  {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => <div key={d}>{d}</div>)}
+                </div>
+                <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-mono">
+                  {time && (() => {
+                    const year = time.getFullYear();
+                    const month = time.getMonth();
+                    const firstDay = new Date(year, month, 1).getDay();
+                    const daysInMonth = new Date(year, month + 1, 0).getDate();
+                    const currentDay = time.getDate();
 
-                  const offset = Array(firstDay).fill(null);
-                  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+                    const offset = Array(firstDay).fill(null);
+                    const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
-                  return [...offset, ...days].map((day, i) => (
-                    <div
-                      key={i}
-                      className={`p-1 rounded flex items-center justify-center min-h-[24px] transition-colors ${day === currentDay
-                        ? 'bg-cyan-glowing/20 text-cyan-glowing font-bold border border-cyan-glowing/50'
-                        : day
-                          ? 'hover:bg-foreground/10 hover:text-cyan-glowing text-foreground/80'
-                          : ''
-                        }`}
-                    >
-                      {day || ''}
-                    </div>
-                  ));
-                })()}
+                    return [...offset, ...days].map((day, i) => (
+                      <div
+                        key={i}
+                        className={`p-1 rounded flex items-center justify-center min-h-[24px] transition-colors ${day === currentDay
+                          ? 'bg-cyan-glowing/20 text-cyan-glowing font-bold border border-cyan-glowing/50'
+                          : day
+                            ? 'hover:bg-foreground/10 hover:text-cyan-glowing text-foreground/80'
+                            : ''
+                          }`}
+                      >
+                        {day || ''}
+                      </div>
+                    ));
+                  })()}
+                </div>
               </div>
-            </div>
             )}
           </div>
 
@@ -284,7 +284,7 @@ export default function MenuBar() {
           <button
             onClick={handleReboot}
             title="Reboot"
-            className="p-1 rounded hover:bg-foreground/10 text-foreground/50 hover:text-cyan-glowing transition-colors"
+            className="p-1 rounded hover:bg-foreground/10 text-foreground/50 hover:text-cyan-glowing transition-colors shrink-0"
           >
             <Power className="w-3.5 h-3.5" />
           </button>

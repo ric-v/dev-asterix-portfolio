@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 import { GitHubRepo } from '@/lib/github';
 import { SystemInfo } from '@/lib/sysinfo';
 
-export type WindowType = 'terminal' | 'computer' | 'status' | 'links' | 'settings' | 'properties' | 'browser' | 'project' | 'preview' | 'viewer' | 'notepad' | 'imageviewer' | 'monitor' | 'welcome';
+export type WindowType = 'terminal' | 'computer' | 'status' | 'links' | 'settings' | 'properties' | 'browser' | 'project' | 'preview' | 'viewer' | 'notepad' | 'imageviewer' | 'monitor' | 'welcome' | 'repo-demo';
 
 export type SnapState = 'none' | 'left' | 'right' | 'maximized';
 
@@ -23,6 +23,7 @@ const MEM_RANGES: Record<WindowType, [number, number]> = {
   links: [30, 55],
   status: [30, 55],
   welcome: [40, 75],
+  'repo-demo': [100, 200],
 };
 
 function simulateMem(type: WindowType): number {
@@ -153,8 +154,8 @@ export const useOSStore = create<OSState>()(
           y: y ?? defaultY,
           metadata,
           isMinimized: false,
-          isMaximized: type === 'browser' || isMobileViewport,
-          snapState: (type === 'browser' || isMobileViewport) ? 'maximized' : 'none',
+          isMaximized: type === 'browser' || isMobileViewport || metadata?.maximized,
+          snapState: (type === 'browser' || isMobileViewport || metadata?.maximized) ? 'maximized' : 'none',
           pid,
           startedAt: Date.now(),
           memoryUsage: simulateMem(type),
