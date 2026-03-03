@@ -38,6 +38,7 @@ export default function FileExplorer() {
   const repos = useOSStore(state => state.repos);
   const reposLoading = useOSStore(state => state.reposLoading);
   const openWindow = useOSStore(state => state.openWindow);
+  const systemInfo = useOSStore(state => state.systemInfo);
 
   // Navigation breadcrumb stack
   const [navStack, setNavStack] = useState<NavLevel[]>([{ label: "My Computer" }]);
@@ -106,7 +107,7 @@ export default function FileExplorer() {
 
   const isRoot = navStack.length === 1;
 
-  const systemInfo = {
+  const fallbackSystemInfo = systemInfo || {
     osName: "dev-asterix OS",
     cpuModel: "Asterix Quantum Engine",
     diskTotal: 1000 * 1024 ** 3,
@@ -152,22 +153,22 @@ export default function FileExplorer() {
           <div className="space-y-2 text-xs">
             <div>
               <span className="text-foreground/40 block mb-0.5">OS</span>
-              <span className="font-mono text-cyan-glowing">{systemInfo.osName}</span>
+              <span className="font-mono text-cyan-glowing">{fallbackSystemInfo.osName}</span>
             </div>
             <div>
               <span className="text-foreground/40 block mb-0.5">CPU</span>
-              <span className="font-mono truncate block">{systemInfo.cpuModel}</span>
+              <span className="font-mono truncate block">{fallbackSystemInfo.cpuModel}</span>
             </div>
             <div>
               <span className="text-foreground/40 block mb-1">Storage (C:)</span>
               <div className="flex justify-between font-mono text-xs mb-1">
-                <span>{(systemInfo.diskUsed / 1024 ** 3).toFixed(0)} GB</span>
-                <span className="text-foreground/40">{(systemInfo.diskTotal / 1024 ** 3).toFixed(0)} GB</span>
+                <span>{(fallbackSystemInfo.diskUsed / 1024 ** 3).toFixed(0)} GB</span>
+                <span className="text-foreground/40">{(fallbackSystemInfo.diskTotal / 1024 ** 3).toFixed(0)} GB</span>
               </div>
               <div className="h-1.5 w-full bg-background rounded-full overflow-hidden border border-glass-border">
                 <div
                   className="h-full bg-cyan-glowing"
-                  style={{ width: `${(systemInfo.diskUsed / systemInfo.diskTotal) * 100}%` }}
+                  style={{ width: `${Math.min(100, Math.max(0, (fallbackSystemInfo.diskUsed / fallbackSystemInfo.diskTotal) * 100))}%` }}
                 />
               </div>
             </div>

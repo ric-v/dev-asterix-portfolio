@@ -1,26 +1,28 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { GitHubRepo } from '@/lib/github';
+import { SystemInfo } from '@/lib/sysinfo';
 
-export type WindowType = 'terminal' | 'computer' | 'status' | 'links' | 'settings' | 'properties' | 'browser' | 'project' | 'preview' | 'viewer' | 'notepad' | 'imageviewer' | 'monitor';
+export type WindowType = 'terminal' | 'computer' | 'status' | 'links' | 'settings' | 'properties' | 'browser' | 'project' | 'preview' | 'viewer' | 'notepad' | 'imageviewer' | 'monitor' | 'welcome';
 
 export type SnapState = 'none' | 'left' | 'right' | 'maximized';
 
 // ── Process memory ranges (MB, simulated) ─────────────────────────────────────
 const MEM_RANGES: Record<WindowType, [number, number]> = {
-  terminal:    [80,  140],
-  computer:    [60,  110],
-  project:     [120, 220],
-  settings:    [40,   70],
-  properties:  [35,   60],
-  browser:     [150, 260],
-  preview:     [140, 240],
-  viewer:      [70,  130],
-  notepad:     [30,   60],
-  imageviewer: [90,  180],
-  monitor:     [50,   90],
-  links:       [30,   55],
-  status:      [30,   55],
+  terminal: [80, 140],
+  computer: [60, 110],
+  project: [120, 220],
+  settings: [40, 70],
+  properties: [35, 60],
+  browser: [150, 260],
+  preview: [140, 240],
+  viewer: [70, 130],
+  notepad: [30, 60],
+  imageviewer: [90, 180],
+  monitor: [50, 90],
+  links: [30, 55],
+  status: [30, 55],
+  welcome: [40, 75],
 };
 
 function simulateMem(type: WindowType): number {
@@ -106,6 +108,10 @@ interface OSState {
   pushNotification: (message: string, type?: NotificationType) => void;
   dismissNotification: (id: string) => void;
   clearNotifications: () => void;
+
+  // System Info
+  systemInfo: SystemInfo | null;
+  setSystemInfo: (info: SystemInfo) => void;
 }
 
 const BASE_Z = 10;
@@ -146,7 +152,8 @@ export const useOSStore = create<OSState>()(
           y: y ?? defaultY,
           metadata,
           isMinimized: false,
-          snapState: 'none',
+          isMaximized: type === 'browser',
+          snapState: type === 'browser' ? 'maximized' : 'none',
           pid,
           startedAt: Date.now(),
           memoryUsage: simulateMem(type),
@@ -300,6 +307,9 @@ export const useOSStore = create<OSState>()(
       },
 
       clearNotifications: () => set({ notifications: [] }),
+
+      systemInfo: null,
+      setSystemInfo: (info) => set({ systemInfo: info }),
     }),
     {
       name: 'asterix-os-storage',

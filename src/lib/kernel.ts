@@ -46,6 +46,7 @@ export function useKernel() {
       notepad: "Notepad",
       imageviewer: metadata?.alt ?? "Image Viewer",
       monitor: "Activity Monitor",
+      welcome: "Welcome to Asterix OS",
     };
 
     store.openWindow(type, title ?? defaultTitles[type], x, y, metadata);
@@ -70,6 +71,7 @@ export function useKernel() {
     const existing = store.windows.find(w => w.type === "browser");
     if (existing) {
       store.focusWindow(existing.id);
+      store.maximizeWindow(existing.id);
       useBrowserStore.getState().navigate(existing.id, resolved.displayUrl, resolved.title);
       // Un-minimise if needed
       if (existing.isMinimized) {
@@ -87,8 +89,8 @@ export function useKernel() {
   }
 
   /** Open a VFS path — resolves to the correct window action */
-  function openPath(path: string) {
-    const node = resolveVFSPath(path, store.repos);
+  async function openPath(path: string) {
+    const node = await resolveVFSPath(path, store.repos);
     if (!node) {
       store.pushNotification(`No such path: ${path}`, "error");
       return;
@@ -211,5 +213,8 @@ export function useKernel() {
     }
   }
 
-  return { openApp, openBrowser, openPath, notify, killPid, killId, refreshRepos, setActiveRepo, setForegroundWindow, init, store };
+  // Calculate pseudo-uptime based on performance API if available
+  const uptime = typeof performance !== 'undefined' ? performance.now() / 1000 : 0;
+
+  return { openApp, openBrowser, openPath, notify, killPid, killId, refreshRepos, setActiveRepo, setForegroundWindow, init, store, uptime };
 }

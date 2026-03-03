@@ -1,104 +1,87 @@
 /**
- * dev-asterix OS — Virtual File System
- *
- * Provides a logical path → action layer so that terminal `cd`, `ls`, `open`
- * and file-explorer navigation can all work from the same path model.
+ * dev-asterix OS — Virtual File System (Async UNIX Model)
  *
  * Structure:
- *   /home           → home directory (terminal default)
- *   /projects       → GitHub repositories root
- *   /projects/<name>→ specific repo (maps to openWindow "project")
- *   /settings       → personalization settings
- *   /system         → system properties
- *   /var/log        → activity monitor / process list
+ *   /bin            → standard utilities (dummy)
+ *   /etc            → config files (dummy)
+ *   /usr            → user programs (dummy)
+ *   /var/log        → maps to activity monitor
+ *   /system         → maps to Settings/Properties
+ *   /home/dev-asterix → User home. Houses GitHub repositories dynamically.
  */
 
 import { WindowType } from "@/store/useOSStore";
 
-// ── VFS Node Types ────────────────────────────────────────────────────────────
-export type VFSNodeType = "dir" | "app" | "link";
+export type VFSNodeType = "dir" | "app" | "link" | "file";
 
 export interface VFSNode {
   name: string;
   type: VFSNodeType;
   path: string;
   description?: string;
-  // If type === "app", opening this path launches a window
   windowType?: WindowType;
   windowTitle?: string;
   windowMetadata?: any;
-  // Children for static dirs
   children?: VFSNode[];
+  content?: string;
 }
 
 // ── Static VFS Tree ───────────────────────────────────────────────────────────
-// Dynamic children (e.g. /projects/<repo>) are resolved at runtime via resolveVFSPath().
-
 export const VFS_ROOT: VFSNode = {
   name: "/",
   type: "dir",
   path: "/",
-  description: "Root filesystem",
   children: [
     {
-      name: "home",
-      type: "dir",
-      path: "/home",
-      description: "User home directory",
+      name: "bin", type: "dir", path: "/bin",
+      children: [
+        { name: "bash", type: "file", path: "/bin/bash", content: "ELF 64-bit LSB executable" },
+        { name: "ls", type: "file", path: "/bin/ls", content: "ELF 64-bit LSB executable" },
+        { name: "cat", type: "file", path: "/bin/cat", content: "ELF 64-bit LSB executable" },
+      ]
+    },
+    {
+      name: "etc", type: "dir", path: "/etc",
+      children: [
+        { name: "passwd", type: "file", path: "/etc/passwd", content: "root:x:0:0:root:/root:/bin/bash\ndev-asterix:x:1000:1000:Asterix,,,:/home/dev-asterix:/bin/bash" },
+        { name: "hosts", type: "file", path: "/etc/hosts", content: "127.0.0.1 localhost\n::1 localhost" },
+      ]
+    },
+    {
+      name: "usr", type: "dir", path: "/usr",
+      children: [
+        { name: "local", type: "dir", path: "/usr/local", children: [] },
+      ]
+    },
+    {
+      name: "var", type: "dir", path: "/var",
       children: [
         {
-          name: "dev-asterix",
-          type: "dir",
-          path: "/home/dev-asterix",
-          description: "Home directory for dev-asterix",
+          name: "log", type: "dir", path: "/var/log", children: [
+            { name: "syslog", type: "app", path: "/var/log/syslog", windowType: "monitor", windowTitle: "Activity Monitor" }
+          ]
         },
-      ],
+      ]
     },
     {
-      name: "projects",
-      type: "dir",
-      path: "/projects",
-      description: "GitHub repositories (dynamic)",
-      // Children populated dynamically by getVFSChildren()
+      name: "system", type: "app", path: "/system",
+      windowType: "settings", windowTitle: "Personalization",
+      description: "System Config",
     },
     {
-      name: "settings",
-      type: "app",
-      path: "/settings",
-      description: "Personalization & Settings",
-      windowType: "settings",
-      windowTitle: "Personalization",
-    },
-    {
-      name: "system",
-      type: "app",
-      path: "/system",
-      description: "System Properties",
-      windowType: "properties",
-      windowTitle: "Properties",
-    },
-    {
-      name: "var",
-      type: "dir",
-      path: "/var",
-      description: "Variable data",
+      name: "home", type: "dir", path: "/home",
       children: [
         {
-          name: "log",
-          type: "app",
-          path: "/var/log",
-          description: "Activity Monitor (process list)",
-          windowType: "monitor",
-          windowTitle: "Activity Monitor",
+          name: "dev-asterix", type: "dir", path: "/home/dev-asterix",
+          // Children injected via runtime fetch of repositories
         },
-      ],
+      ]
     },
   ],
 };
 
 // ── Path Utilities ─────────────────────────────────────────────────────────────
 export function normalizePath(raw: string, cwd = "/"): string {
-  // Resolve relative to cwd, collapse .., handle ~
   if (raw === "~" || raw === "") return "/home/dev-asterix";
   if (raw.startsWith("~/")) return "/home/dev-asterix/" + raw.slice(2);
   if (!raw.startsWith("/")) {
@@ -113,51 +96,129 @@ export function normalizePath(raw: string, cwd = "/"): string {
   return "/" + resolved.join("/");
 }
 
-// ── Resolve a VFS path to a node ──────────────────────────────────────────────
-// repos: pass the repos array from the store to resolve /projects/<name>
-export function resolveVFSPath(path: string, repos: { name: string }[]): VFSNode | null {
-  if (path === "/" || path === "") return VFS_ROOT;
+export function vfsDisplayPath(path: string): string {
+  const home = "/home/dev-asterix";
+  if (path === home || path === home + "/") return "~";
+  if (path.startsWith(home + "/")) return "~" + path.slice(home.length);
+  return path;
+}
 
-  const segments = path.split("/").filter(Boolean);
+// ── GitHub Fetch Cache ────────────────────────────────────────────────────────
+const repoTreeCache = new Map<string, VFSNode>();
 
-  // Dynamic: /projects[/<name>]
-  if (segments[0] === "projects") {
-    if (segments.length === 1) {
-      // Return a virtual /projects dir with dynamic children
-      return {
-        name: "projects",
-        type: "dir",
-        path: "/projects",
-        description: "GitHub Repositories",
-        children: repos.map((r) => ({
-          name: r.name,
-          type: "app" as VFSNodeType,
-          path: `/projects/${r.name}`,
-          description: `Repository: ${r.name}`,
-          windowType: "project" as WindowType,
-          windowTitle: `${r.name} — project`,
-          windowMetadata: { repoName: r.name },
-        })),
-      };
+async function fetchRepoTree(repoName: string): Promise<VFSNode | null> {
+  if (repoTreeCache.has(repoName)) return repoTreeCache.get(repoName)!;
+
+  try {
+    // Note: To fetch the entire tree recursively, we hit github API
+    const res = await fetch(`https://api.github.com/repos/dev-asterix/${repoName}/git/trees/HEAD?recursive=1`);
+    if (!res.ok) return null;
+    const data = await res.json();
+
+    // Build tree
+    const rootNode: VFSNode = {
+      name: repoName,
+      type: "dir",
+      path: `/home/dev-asterix/${repoName}`,
+      children: [],
+      windowType: "project",
+      windowTitle: `${repoName} — project`,
+      windowMetadata: { repoName }
+    };
+
+    // Add README.md explicitly as a file node to intercept `cat` later if needed, but we'll map all files!
+    const items = data.tree || [];
+
+    const nodeMap = new Map<string, VFSNode>();
+    nodeMap.set("", rootNode);
+
+    // Sort items so dirs come before files potentially, but just ensure parents exist
+    items.sort((a: any, b: any) => a.path.split('/').length - b.path.split('/').length);
+
+    for (const item of items) {
+      if (item.type === "tree" || item.type === "blob") {
+        const parts = item.path.split("/");
+        const name = parts.pop()!;
+        const parentPath = parts.join("/");
+        const parentNode = nodeMap.get(parentPath);
+
+        if (parentNode) {
+          const newNode: VFSNode = {
+            name,
+            type: item.type === "tree" ? "dir" : "file",
+            path: `/home/dev-asterix/${repoName}/${item.path}`,
+            children: item.type === "tree" ? [] : undefined
+          };
+          nodeMap.set(item.path, newNode);
+          parentNode.children = parentNode.children || [];
+          parentNode.children.push(newNode);
+        }
+      }
     }
-    if (segments.length === 2) {
-      const repoName = segments[1];
-      const repo = repos.find((r) => r.name.toLowerCase() === repoName.toLowerCase());
-      if (!repo) return null;
-      return {
-        name: repo.name,
-        type: "app",
-        path: `/projects/${repo.name}`,
-        description: `Repository: ${repo.name}`,
-        windowType: "project",
-        windowTitle: `${repo.name} — project`,
-        windowMetadata: { repoName: repo.name },
-      };
-    }
+
+    repoTreeCache.set(repoName, rootNode);
+    return rootNode;
+  } catch {
     return null;
   }
+}
 
-  // Static tree walk
+// ── Resolve a VFS path to a node ──────────────────────────────────────────────
+export async function resolveVFSPath(path: string, repos: { name: string }[]): Promise<VFSNode | null> {
+  const normPath = normalizePath(path);
+  if (normPath === "/") return VFS_ROOT;
+
+  const segments = normPath.split("/").filter(Boolean);
+
+  // If inside /home/dev-asterix, map repositories dynamically
+  if (segments[0] === "home" && segments[1] === "dev-asterix") {
+    if (segments.length === 2) {
+      // User home dir root
+      return {
+        name: "dev-asterix", type: "dir", path: "/home/dev-asterix",
+        children: repos.map(r => ({
+          name: r.name,
+          type: "dir",
+          path: `/home/dev-asterix/${r.name}`,
+          description: `Repository: ${r.name}`,
+          windowType: "project",
+          windowTitle: `${r.name} — project`,
+          windowMetadata: { repoName: r.name }
+        }))
+      };
+    }
+
+    // Inside a specific repository
+    const repoName = segments[2];
+    const repo = repos.find(r => r.name.toLowerCase() === repoName.toLowerCase());
+
+    if (repo) {
+      // If asking for the repo root itself
+      if (segments.length === 3) {
+        const repoRoot = await fetchRepoTree(repo.name);
+        if (repoRoot) return repoRoot;
+        // Fallback shallow node if fetch fails
+        return {
+          name: repo.name, type: "dir", path: `/home/dev-asterix/${repo.name}`, children: []
+        };
+      }
+
+      // Asking for deep file/folder in repo
+      const repoRoot = await fetchRepoTree(repo.name);
+      if (repoRoot) {
+        let currentNode = repoRoot;
+        for (let i = 3; i < segments.length; i++) {
+          const child = currentNode.children?.find(c => c.name.toLowerCase() === segments[i].toLowerCase());
+          if (!child) return null;
+          currentNode = child;
+        }
+        return currentNode;
+      }
+    }
+    return null; // Unknown folder in home
+  }
+
+  // Static tree walk for normal linux dirs (/bin, /etc, /system)
   let node: VFSNode | undefined = VFS_ROOT;
   for (const seg of segments) {
     const child: VFSNode | undefined = node?.children?.find((c) => c.name === seg);
@@ -168,28 +229,9 @@ export function resolveVFSPath(path: string, repos: { name: string }[]): VFSNode
 }
 
 // ── Get children of a path ────────────────────────────────────────────────────
-export function getVFSChildren(path: string, repos: { name: string }[]): VFSNode[] {
-  const node = resolveVFSPath(path, repos);
+export async function getVFSChildren(path: string, repos: { name: string }[]): Promise<VFSNode[]> {
+  const node = await resolveVFSPath(path, repos);
   if (!node) return [];
-  if (path === "/projects" || path.startsWith("/projects/")) {
-    // Return repo nodes
-    return repos.map((r) => ({
-      name: r.name,
-      type: "app" as VFSNodeType,
-      path: `/projects/${r.name}`,
-      description: `Repository: ${r.name}`,
-      windowType: "project" as WindowType,
-      windowTitle: `${r.name} — project`,
-      windowMetadata: { repoName: r.name },
-    }));
-  }
+  // resolveVFSPath already builds the proper children arrays for repos now
   return node.children ?? [];
-}
-
-// ── Describe path for terminal prompt ─────────────────────────────────────────
-export function vfsDisplayPath(path: string): string {
-  const home = "/home/dev-asterix";
-  if (path === home || path === home + "/") return "~";
-  if (path.startsWith(home + "/")) return "~" + path.slice(home.length);
-  return path;
 }

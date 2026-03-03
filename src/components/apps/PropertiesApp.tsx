@@ -6,7 +6,7 @@ import { formatDistanceToNow } from "date-fns";
 import { Github, Monitor, Box, Star, Clock, Cpu } from "lucide-react";
 
 export default function PropertiesApp() {
-  const { repos, reposLoading, settings } = useOSStore();
+  const { repos, reposLoading, settings, systemInfo } = useOSStore();
 
   // Aggregate stats
   const totalRepos = repos.length;
@@ -37,7 +37,7 @@ export default function PropertiesApp() {
     }, 0)
     : 0;
 
-  const systemInfo = {
+  const fallbackSystemInfo = systemInfo || {
     osName: "dev-asterix OS",
     cpuModel: "Asterix Quantum Engine",
     build: "v1.0.0-stable",
@@ -51,7 +51,7 @@ export default function PropertiesApp() {
         </div>
         <div>
           <h2 className="text-xl font-bold tracking-tight">System Properties</h2>
-          <p className="text-sm text-foreground/60">dev-asterix OS • {systemInfo.build}</p>
+          <p className="text-sm text-foreground/60">dev-asterix OS • v1.0.0-stable</p>
         </div>
       </div>
 
@@ -66,11 +66,11 @@ export default function PropertiesApp() {
           <div className="bg-foreground/5 p-4 rounded-lg border border-glass-border flex flex-col gap-3">
             <div className="flex justify-between items-center text-sm">
               <span className="text-foreground/60">OS Version</span>
-              <span className="font-mono text-cyan-glowing">{systemInfo.osName}</span>
+              <span className="font-mono text-cyan-glowing">{fallbackSystemInfo.osName}</span>
             </div>
             <div className="flex justify-between items-center text-sm">
               <span className="text-foreground/60">Processor</span>
-              <span className="font-mono truncate max-w-[150px]" title={systemInfo.cpuModel}>{systemInfo.cpuModel}</span>
+              <span className="font-mono truncate max-w-[150px]" title={fallbackSystemInfo.cpuModel}>{fallbackSystemInfo.cpuModel}</span>
             </div>
             <div className="flex justify-between items-center text-sm">
               <span className="text-foreground/60">Current Theme</span>

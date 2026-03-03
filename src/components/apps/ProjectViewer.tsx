@@ -94,61 +94,58 @@ export default function ProjectViewer({ repoName }: ProjectViewerProps) {
     <div className="flex flex-col h-full overflow-auto font-sans">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-glass-border">
-        <div className="flex flex-col gap-3 p-5">
+        <div className="flex flex-col gap-2 p-3">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex items-center gap-2 mb-0.5">
                 <Terminal size={20} className="text-emerald-burnt shrink-0" />
-                <h2 className="text-2xl font-bold tracking-tight truncate">{repo.name}</h2>
+                <h2 className="text-xl font-bold tracking-tight truncate">{repo.name}</h2>
               </div>
               {repo.description && (
-                <p className="text-sm text-foreground/60 leading-relaxed max-w-2xl">{repo.description}</p>
+                <p className="text-sm text-foreground/60 leading-relaxed max-w-2xl truncate">{repo.description}</p>
               )}
             </div>
             <div className="flex gap-2 shrink-0">
               {repo.homepage && (
                 <button
                   onClick={() => kernel.openBrowser(repo.homepage!)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-glowing/10 text-cyan-glowing border border-cyan-glowing/30 hover:bg-cyan-glowing/20 transition text-xs font-medium"
+                  className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-cyan-glowing/10 text-cyan-glowing border border-cyan-glowing/30 hover:bg-cyan-glowing/20 transition text-[10px] font-medium"
                 >
-                  <ExternalLink size={12} /> Live Demo
+                  <ExternalLink size={10} /> Live Demo
                 </button>
               )}
               <a
                 href={repo.html_url}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground/5 border border-glass-border hover:bg-foreground/10 transition text-xs flex-nowrap font-medium"
+                className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-foreground/5 border border-glass-border hover:bg-foreground/10 transition text-[10px] flex-nowrap font-medium"
               >
-                <Github size={12} /> GitHub
+                <Github size={10} /> GitHub
               </a>
             </div>
           </div>
 
           {/* Topics */}
           {repo.topics?.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1 mt-0.5">
               {repo.topics.map((t: string) => (
-                <span key={t} className="px-2 py-0.5 rounded-full text-[11px] bg-cyan-glowing/10 text-cyan-glowing border border-cyan-glowing/20 font-mono">{t}</span>
+                <span key={t} className="px-1.5 py-0.5 rounded-full text-[9px] bg-cyan-glowing/10 text-cyan-glowing border border-cyan-glowing/20 font-mono">{t}</span>
               ))}
             </div>
           )}
 
-          {/* Language bar */}
-          <LanguageBreakdown languages={languages} />
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 px-5 pb-4 border-t border-glass-border text-sm">
+        <div className="flex gap-1 px-3 pb-2 border-t border-glass-border text-xs">
           {['overview', 'files', 'code'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab as any)}
-              className={`px-3 py-2 rounded transition-colors ${
-                activeTab === tab
-                  ? 'bg-cyan-glowing/20 text-cyan-glowing border border-cyan-glowing/30'
-                  : 'text-foreground/60 hover:text-foreground/80'
-              }`}
+              className={`px-3 py-2 rounded transition-colors ${activeTab === tab
+                ? 'bg-cyan-glowing/20 text-cyan-glowing border border-cyan-glowing/30'
+                : 'text-foreground/60 hover:text-foreground/80'
+                }`}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>
@@ -162,16 +159,6 @@ export default function ProjectViewer({ repoName }: ProjectViewerProps) {
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {/* Main content */}
             <div className="lg:col-span-2 min-w-0 space-y-6">
-              {/* Activity Graph */}
-              {activityGraph && (
-                <ActivityGraphComponent activityGraph={activityGraph} />
-              )}
-
-              {/* Stack */}
-              {stack && (
-                <StackDisplay stack={stack} />
-              )}
-
               {/* README */}
               <div className="rounded-lg border border-glass-border bg-background/5 dark:bg-black/10 overflow-hidden">
                 <div className="flex items-center gap-1.5 px-3 py-2 border-b border-glass-border bg-foreground/5 font-mono text-xs text-foreground/40">
@@ -180,7 +167,8 @@ export default function ProjectViewer({ repoName }: ProjectViewerProps) {
                   <div className="w-2 h-2 rounded-full bg-green-500/70" />
                   <span className="ml-2">README.md</span>
                 </div>
-                <div className="p-4 overflow-auto max-h-96">
+                {/* Adjusting max-h to take more space instead of artificially limiting it */}
+                <div className="p-4 overflow-auto max-h-[calc(100vh-250px)]">
                   {readme
                     ? <MarkdownRenderer content={readme} />
                     : <p className="text-foreground/40 italic font-mono text-xs text-center py-8">No README.md found.</p>
@@ -190,9 +178,27 @@ export default function ProjectViewer({ repoName }: ProjectViewerProps) {
             </div>
 
             {/* Sidebar */}
-            <div className="flex flex-col gap-4 lg:max-h-96 overflow-auto">
+            <div className="flex flex-col gap-4 overflow-auto max-h-[calc(100vh-250px)] pb-6 pr-2">
               {/* Stats */}
               <RepoStats repo={repo} />
+
+              {/* Language bar */}
+              <div className="rounded-lg border border-glass-border bg-foreground/5 p-3">
+                <div className="flex items-center gap-2 mb-3 text-xs font-semibold text-foreground/80">
+                  Languages
+                </div>
+                <LanguageBreakdown languages={languages} />
+              </div>
+
+              {/* Activity Graph */}
+              {activityGraph && (
+                <ActivityGraphComponent activityGraph={activityGraph} />
+              )}
+
+              {/* Stack */}
+              {stack && (
+                <StackDisplay stack={stack} />
+              )}
 
               {/* Commits */}
               {commits.length > 0 && (
@@ -262,8 +268,8 @@ export default function ProjectViewer({ repoName }: ProjectViewerProps) {
               )}
               {selectedFile.type === 'video' && (
                 <div className="flex items-center justify-center h-full bg-black/20 rounded-lg">
-                  <video 
-                    controls 
+                  <video
+                    controls
                     className="max-w-full max-h-full rounded"
                     src={selectedFile.content}
                   >

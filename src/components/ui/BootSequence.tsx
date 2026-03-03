@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { SystemInfo } from "@/lib/sysinfo";
 
 const BOOT_DONE_KEY = "asterix-boot-done";
 
@@ -11,49 +12,59 @@ const BOOT_DONE_KEY = "asterix-boot-done";
 // sunrise → warm glow transition
 // done    → unmount
 
-const BIOS_LINES = [
-  { text: "╔══════════════════════════════════════════════════════════════╗", delay: 0 },
-  { text: "║          ASTERIX QUANTUM BIOS  v3.14.0  (Build 20260225)     ║", delay: 60 },
-  { text: "║          Copyright © 2026 Asterix Systems. All rights reserved.║", delay: 60 },
-  { text: "╚══════════════════════════════════════════════════════════════╝", delay: 60 },
-  { text: "", delay: 80 },
-  { text: "Initialising hardware subsystems ...", delay: 120 },
-  { text: "", delay: 40 },
-  { text: "  CPU   : Asterix Quantum Engine @ 9.6 GHz  [ 16 cores / 32 threads ]     ✓", delay: 90 },
-  { text: "  MEMORY : 470 GB DDR6X ECC  @ 8800 MHz                                    ✓", delay: 90 },
-  { text: "  GPU   : Asterix Neural Renderer v4  [ 48 GB GDDR7 ]                      ✓", delay: 90 },
-  { text: "  NETWORK: WLAN 7  [ 6 GHz · Auto-Negotiated 46 Gbps ]                     ✓", delay: 90 },
-  { text: "  STORAGE: NVMe Gen5 2 TB  +  SSD Cache 256 GB                              ✓", delay: 90 },
-  { text: "  TPM   : 3.0 ACTIVE                                                        ✓", delay: 90 },
-  { text: "", delay: 80 },
-  { text: "Secure Boot ........... VERIFIED", delay: 100 },
-  { text: "Firmware Integrity ..... PASSED", delay: 80 },
-  { text: "Memory Test (470 GB) ... PASSED", delay: 80 },
-  { text: "", delay: 80 },
-  { text: "Loading bootloader ..... asterix-grub-efi", delay: 120 },
-  { text: "", delay: 60 },
-  { text: "[    0.000000] Booting Linux 6.14.0-asterix-amd64 x86_64", delay: 80 },
-  { text: "[    0.018431] ACPI tables loaded successfully", delay: 70 },
-  { text: "[    0.037892] Memory: 470.0G available (28672K kernel code)", delay: 70 },
-  { text: "[    0.061204] PCI: Enumerated 32 devices (14 bridges)", delay: 70 },
-  { text: "[    0.083991] SCSI subsystem initialized", delay: 70 },
-  { text: "[    0.109114] NVMe 0000:03:00.0: 2048GiB NVMe drive ready", delay: 70 },
-  { text: "[    0.131882] NET: IPv6/IPv4 dual-stack registered", delay: 70 },
-  { text: "[    0.153029] wlan0: WLAN 7 (6 GHz) connected · 46 Gbps", delay: 70 },
-  { text: "[    0.172344] drm: Asterix Neural Renderer (VRAM 48GB) initialized", delay: 70 },
-  { text: "[    0.201003] systemd 257.2-2 running in system mode", delay: 80 },
-  { text: "[    0.229114] Started D-Bus System Message Bus", delay: 70 },
-  { text: "[    0.254882] Started NetworkManager", delay: 70 },
-  { text: "[    0.278991] Started Bluetooth                            [ OK ]", delay: 80 },
-  { text: "[    0.301447] Reached target: Graphical Interface          [ OK ]", delay: 90 },
-  { text: "", delay: 80 },
-  { text: "⬡  asterix.dev OS — session start", delay: 150 },
-];
+function getBiosLines(systemInfo: SystemInfo) {
+  const model = systemInfo.cpuModel || "Asterix Quantum Engine @ 9.6 GHz";
+  const memTotalGB = Math.max(1, Math.round(systemInfo.memTotal / (1024 * 1024 * 1024)));
+  const memUsedGB = (systemInfo.memUsed / (1024 * 1024 * 1024)).toFixed(1);
+  const diskTotalGB = Math.max(1, Math.round(systemInfo.diskTotal / (1024 * 1024 * 1024)));
+  const diskUsedGB = (systemInfo.diskUsed / (1024 * 1024 * 1024)).toFixed(1);
+  const cpuLoadStr = systemInfo.cpuLoad !== undefined ? `${systemInfo.cpuLoad.toFixed(1)}%` : "0.0%";
+
+  return [
+    { text: "╔════════════════════════════════════════════════════════════════╗", delay: 0 },
+    { text: "║      ASTERIX QUANTUM BIOS  v3.14.0  (Build 20260225)           ║", delay: 60 },
+    { text: "║      Copyright © 2026 Asterix Systems. All rights reserved.    ║", delay: 60 },
+    { text: "╚════════════════════════════════════════════════════════════════╝", delay: 60 },
+    { text: "", delay: 80 },
+    { text: "Initialising hardware subsystems ...", delay: 120 },
+    { text: "", delay: 40 },
+    { text: `  CPU   : ${model}  [ Load: ${cpuLoadStr} ] ✓`, delay: 90 },
+    { text: `  MEMORY : ${memUsedGB} GB / ${memTotalGB} GB Used ✓`, delay: 90 },
+    { text: "  GPU   : Asterix Neural Renderer v4  [ 48 GB GDDR7 ] ✓", delay: 90 },
+    { text: "  NETWORK: WLAN 7  [ 6 GHz · Auto-Negotiated 46 Gbps ] ✓", delay: 90 },
+    { text: `  STORAGE: ${diskUsedGB} GB / ${diskTotalGB} GB Used  +  SSD Cache 256 GB ✓`, delay: 90 },
+    { text: "  TPM   : 3.0 ACTIVE ✓", delay: 90 },
+    { text: "", delay: 80 },
+    { text: "Secure Boot ........... VERIFIED", delay: 100 },
+    { text: "Firmware Integrity ..... PASSED", delay: 80 },
+    { text: `Memory Test (${memTotalGB} GB) ... PASSED`, delay: 80 },
+    { text: "", delay: 80 },
+    { text: "Loading bootloader ..... asterix-grub-efi", delay: 120 },
+    { text: "", delay: 60 },
+    { text: "[    0.000000] Booting Linux 6.14.0-asterix-amd64 x86_64", delay: 80 },
+    { text: "[    0.018431] ACPI tables loaded successfully", delay: 70 },
+    { text: `[    0.037892] Memory: ${memTotalGB}.0G available (28672K kernel code)`, delay: 70 },
+    { text: "[    0.061204] PCI: Enumerated 32 devices (14 bridges)", delay: 70 },
+    { text: "[    0.083991] SCSI subsystem initialized", delay: 70 },
+    { text: `[    0.109114] NVMe 0000:03:00.0: ${diskTotalGB}GB NVMe drive ready`, delay: 70 },
+    { text: "[    0.131882] NET: IPv6/IPv4 dual-stack registered", delay: 70 },
+    { text: "[    0.153029] wlan0: WLAN 7 (6 GHz) connected · 46 Gbps", delay: 70 },
+    { text: "[    0.172344] drm: Asterix Neural Renderer (VRAM 48GB) initialized", delay: 70 },
+    { text: "[    0.201003] systemd 257.2-2 running in system mode", delay: 80 },
+    { text: "[    0.229114] Started D-Bus System Message Bus", delay: 70 },
+    { text: "[    0.254882] Started NetworkManager", delay: 70 },
+    { text: "[    0.278991] Started Bluetooth                            [ OK ]", delay: 80 },
+    { text: "[    0.301447] Reached target: Graphical Interface          [ OK ]", delay: 90 },
+    { text: "", delay: 80 },
+    { text: "⬡  asterix.dev OS — session start", delay: 150 },
+  ];
+}
 
 type Phase = "bios" | "loading" | "done";
 
 interface BootSequenceProps {
   onComplete: () => void;
+  systemInfo: SystemInfo;
 }
 
 function classifyLine(text: string): string {
@@ -66,7 +77,7 @@ function classifyLine(text: string): string {
   return "normal";
 }
 
-export default function BootSequence({ onComplete }: BootSequenceProps) {
+export default function BootSequence({ onComplete, systemInfo }: BootSequenceProps) {
   // null = not yet checked (SSR / before mount). true = should show. false = skip.
   const [shouldShow, setShouldShow] = useState<boolean | null>(null);
   const [phase, setPhase] = useState<Phase>("bios");
@@ -101,7 +112,8 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
     let cancelled = false;
 
     async function stream() {
-      for (const line of BIOS_LINES) {
+      const biosLines = getBiosLines(systemInfo);
+      for (const line of biosLines) {
         if (cancelled) return;
         await new Promise(r => setTimeout(r, line.delay));
         if (cancelled) return;
@@ -179,6 +191,7 @@ export default function BootSequence({ onComplete }: BootSequenceProps) {
                     initial={{ opacity: 0, x: -4 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.1 }}
+                    style={{ whiteSpace: "pre" }}
                     className={
                       line.type === "ok" ? "text-emerald-400" :
                         line.type === "pass" ? "text-green-300" :

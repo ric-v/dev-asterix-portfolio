@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import fs from 'fs';
+import path from 'path';
 
 export const revalidate = 300; // 5 min cache
 
@@ -27,6 +29,33 @@ export async function GET(
 
   const { searchParams } = new URL(request.url);
   const raw = searchParams.get('raw') === 'true';
+
+  // --- Intercept specific local portfolio files (e.g., Architecture.md) ---
+  if (username === 'dev-asterix' && repo === 'portfolio' && dirPath === 'Architecture.md') {
+    try {
+      const localPath = path.join(process.cwd(), 'public', 'Architecture.md');
+      const content = fs.readFileSync(localPath, 'utf8');
+
+      if (raw) {
+        return new Response(content, {
+          headers: {
+            'Content-Type': 'text/plain; charset=utf-8',
+            'Cache-Control': 's-maxage=300, stale-while-revalidate=600',
+          },
+        });
+      }
+
+      return NextResponse.json({
+        name: "Architecture.md",
+        path: "Architecture.md",
+        type: "file",
+        content: Buffer.from(content).toString('base64'),
+        encoding: "base64"
+      });
+    } catch (e) {
+      console.error("Local file intercept failed for Architecture.md", e);
+    }
+  }
 
   try {
     if (raw) {
