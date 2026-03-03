@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 
 const appIcons: Record<WindowType, React.ReactNode> = {
   terminal: <Terminal size={18} />,
+  welcome: <Activity size={18} />,
   computer: <HardDrive size={18} />,
   settings: <Settings size={18} />,
   properties: <Info size={18} />,

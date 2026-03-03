@@ -48,6 +48,7 @@ function useCpuTicker(windows: OSWindow[], procList?: { pid: number; cpu?: numbe
 // ── Type icon map ─────────────────────────────────────────────────────────────
 const TYPE_ICONS: Record<WindowType, React.ReactNode> = {
   terminal:    <Terminal size={14} className="text-emerald-400" />,
+  welcome:     <Activity size={14} className="text-emerald-400" />,
   computer:    <HardDrive size={14} className="text-cyan-glowing" />,
   settings:    <Settings size={14} className="text-amber-400" />,
   properties:  <Info size={14} className="text-foreground/60" />,
