@@ -16,6 +16,7 @@ const appIcons: Record<WindowType, React.ReactNode> = {
   status: <Info size={18} />,
   browser: <Globe size={18} />,
   project: <FolderGit2 size={18} />,
+  "repo-demo": <FolderGit2 size={18} />,
   preview: <Globe size={18} />,
   viewer: <ExternalLink size={18} />,
   notepad: <FileText size={18} />,

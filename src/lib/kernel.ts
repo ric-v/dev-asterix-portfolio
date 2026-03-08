@@ -47,6 +47,7 @@ export function useKernel() {
       imageviewer: metadata?.alt ?? "Image Viewer",
       monitor: "Activity Monitor",
       welcome: "Welcome to Asterix OS",
+      "repo-demo": metadata?.repoId ? `${metadata.repoId} — Interactive Demo` : "Interactive Demo",
     };
 
     store.openWindow(type, title ?? defaultTitles[type], x, y, metadata);
