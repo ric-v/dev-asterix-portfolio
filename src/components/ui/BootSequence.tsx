@@ -232,7 +232,8 @@ export default function BootSequence({ onComplete, systemInfo }: BootSequencePro
                   loadProgress < 40 ? "Starting display server..." :
                     loadProgress < 60 ? "Loading desktop environment..." :
                       loadProgress < 80 ? "Restoring session..." :
-                        loadProgress < 95 ? "Applying theme..." : "Ready."}
+                        loadProgress < 95 ? "Applying theme..." :
+                          "Right-click desktop · Ctrl+K · Drag windows to explore"}
               </div>
             </div>
           )}

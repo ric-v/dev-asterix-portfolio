@@ -9,8 +9,8 @@ export const revalidate = 3600; // revalidate every hour
 
 export default async function Home() {
   const [repos, systemInfo] = await Promise.all([
-    fetchRepos('dev-asterix'),
-    getSystemInfo()
+    fetchRepos("dev-asterix"),
+    getSystemInfo(),
   ]);
 
   return (
